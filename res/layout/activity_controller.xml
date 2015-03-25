@@ -1,0 +1,46 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    tools:context=".ControllerActivity">
+
+    <ImageView
+        android:id="@+id/imageView1"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:src="@drawable/background"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentBottom="true" />
+
+    <Button
+        android:layout_width="150dp"
+        android:layout_height="40dp"
+        android:text="Start Server"
+        android:id="@+id/button"
+        android:layout_alignBottom="@+id/imageView1"
+        android:layout_centerHorizontal="true" />
+    
+    <ToggleButton 
+    android:id="@+id/tracking"
+    android:layout_width="150dp"
+    android:layout_height="40dp"
+    android:textOn="On"
+    android:textOff="Off"
+    android:onClick="onToggleClicked"
+    android:layout_alignParentLeft="true"
+    android:layout_alignParentBottom="true"/>
+	
+    <SeekBar
+        android:layout_width="200dp"
+        android:layout_height="32dp"
+        android:id="@+id/seekBar"
+        android:rotation="270"
+        android:layout_centerVertical="true"
+        android:layout_alignParentRight="true"
+        />
+
+
+</RelativeLayout>
