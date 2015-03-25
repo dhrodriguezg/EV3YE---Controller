@@ -6,6 +6,8 @@ import android.bluetooth.BluetoothDevice;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.net.DhcpInfo;
+import android.net.wifi.WifiManager;
 import android.net.wifi.p2p.WifiP2pConfig;
 import android.net.wifi.p2p.WifiP2pDevice;
 import android.net.wifi.p2p.WifiP2pDeviceList;
@@ -36,6 +38,7 @@ import ca.ualberta.ev3ye.controller.comm.auxiliary.AppState;
 import ca.ualberta.ev3ye.controller.comm.auxiliary.TwoLineArrayAdapter;
 import ca.ualberta.ev3ye.controller.comm.auxiliary.WiFiP2PBroadcastReceiver;
 import ca.ualberta.ev3ye.controller.comm.logic.BluetoothCom;
+import ca.ualberta.ev3ye.controller.streaming.ControllerActivity;
 
 /*
 * NOTE TO SELF:
@@ -126,14 +129,12 @@ public class MainActivity
 	protected void onSaveInstanceState( Bundle outState )
 	{
 		super.onSaveInstanceState( outState );
-		// TODO
 	}
 
 	@Override
 	protected void onRestoreInstanceState( Bundle savedInstanceState )
 	{
 		super.onRestoreInstanceState( savedInstanceState );
-		// TODO
 	}
 
 	@Override
@@ -231,11 +232,11 @@ public class MainActivity
 					}
 				}
 			});
-			goodConnection = false; //in case I want to connect to a second device...
+			//goodConnection = false; //in case I want to connect to a second device...
 		}
 	}
 	
-	private void connectToLeader(final WifiP2pInfo info){ //TODO
+	private void connectToLeader(final WifiP2pInfo info){
 		Thread thread = new Thread() {
             public void run() {
             	if(clientTCP==null){
@@ -336,8 +337,21 @@ public class MainActivity
 		public void onSuccess()
 		{
 			Log.v( AppState.LOG_TAG, "[WIFI] > P2P connection accepted!" );
+			if(goodConnection){ //already connected to group leader. So leader info should be available now.
+				p2pManager.requestConnectionInfo(p2pChannel, new WifiP2pManager.ConnectionInfoListener() {
+					@Override
+					public void onConnectionInfoAvailable(WifiP2pInfo info) {
+						if(info.groupFormed){
+							Toast.makeText(context, "Leader found!", Toast.LENGTH_LONG).show();
+							connectToLeader(info);
+						}else{
+							Toast.makeText(context, "NO leader found :(", Toast.LENGTH_SHORT).show();
+							System.out.println("Group not formed yet :(");
+						}
+					}
+				});
+			}
 			goodConnection = true;
-			// TODO:
 			// http://developer.android.com/guide/topics/connectivity/wifip2p.html
 
 		}
@@ -448,9 +462,7 @@ public class MainActivity
 			wifiP2pRefreshButton = (ImageButton) findViewById( R.id.a_main_wifi_refresh_button );
 			bluetoothSpinner = (Spinner) findViewById( R.id.a_main_bluetooth_spinner );
 			wifiP2pSpinner = (Spinner) findViewById( R.id.a_main_wifi_spinner );
-			
-			moveAnotherActivity = (Button) findViewById( R.id.move_to_another_activity ); //TODO
-
+			moveAnotherActivity = (Button) findViewById( R.id.move_to_another_activity );
 			bluetoothDevices = new ArrayList<>();
 			bluetoothArrayAdapter = new TwoLineArrayAdapter( MainActivity.this, bluetoothDevices );
 			bluetoothArrayAdapter.setDropDownViewResource( R.layout.list_item_spinner );
@@ -477,6 +489,10 @@ public class MainActivity
 	            }
 	        });
 	    }
+		
+		public String intToIPv4(int i) {
+			   return ((i >> 24 ) & 0xFF ) + "." + ((i >> 16 ) & 0xFF) + "." +((i >> 8 ) & 0xFF) + "." +( i & 0xFF) ;
+		}
 
 		private void populateBtList()
 		{
@@ -560,11 +576,17 @@ public class MainActivity
 				@Override
 				public void onClick( View v )
 				{
-					Intent myIntent = new Intent(MainActivity.this, ca.ualberta.ev3ye.controller.streaming.ControllerActivity.class);
+					Intent myIntent = new Intent(MainActivity.this, ControllerActivity.class);
+					String ipv4 = null;
+					if(clientTCP==null){//not connected to group leader
+						WifiManager wifii= (WifiManager) getSystemService(Context.WIFI_SERVICE);
+						DhcpInfo d=wifii.getDhcpInfo();
+						ipv4 = intToIPv4(d.gateway);
+					}else{
+						ipv4=clientTCP.getServerAddress();
+					}
 					myIntent.putExtra("CameraIP", clientTCP.getServerAddress()); //Optional parameters
 					MainActivity.this.startActivity(myIntent);
-					
-					
 				}
 			} );
 
@@ -573,6 +595,8 @@ public class MainActivity
 				@Override
 				public void onClick( View v )
 				{
+					if(wifiP2pSpinner.getSelectedItemPosition()==android.widget.AdapterView.INVALID_POSITION)
+						return;
 					String address = wifiP2pArrayAdapter.getItem( wifiP2pSpinner.getSelectedItemPosition() ).second;
 
 					p2pConfig = new WifiP2pConfig();

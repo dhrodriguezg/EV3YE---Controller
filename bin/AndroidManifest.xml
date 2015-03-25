@@ -19,6 +19,7 @@
 		android:theme="@android:style/Theme.NoTitleBar">
 		<activity
 			android:name="ca.ualberta.ev3ye.controller.MainActivity"
+			android:icon="@drawable/controller_icon"
 			android:label="@string/app_name">
 			<intent-filter>
 				<action android:name="android.intent.action.MAIN"/>
