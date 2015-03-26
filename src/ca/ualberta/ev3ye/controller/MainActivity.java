@@ -6,6 +6,7 @@ import android.bluetooth.BluetoothDevice;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.graphics.Color;
 import android.net.DhcpInfo;
 import android.net.wifi.WifiManager;
 import android.net.wifi.p2p.WifiP2pConfig;
@@ -64,6 +65,7 @@ public class MainActivity
 	protected P2PConnectionReceiver    p2pConnectionReceiver = null;
 	protected GamePadHandler           gamePad               = null;
 	
+	private static final boolean isWiFiDirect = false;
 	public Context context = null;
 	boolean goodConnection = false;
 	private ClientTCP clientTCP = null;
@@ -78,7 +80,8 @@ public class MainActivity
 		viewHolder = new ViewHolder();
 		viewHolder.init();
 		context = this;
-		initWiFiP2p();
+		if(isWiFiDirect)
+			initWiFiP2p();
 
 		checkForJoystick();
 	}
@@ -119,10 +122,12 @@ public class MainActivity
 	protected void onResume()
 	{
 		super.onResume();
-		this.registerReceiver( p2pBroadcastReceiver, p2pIntentFilter );
-
+		if(isWiFiDirect){
+			this.registerReceiver( p2pBroadcastReceiver, p2pIntentFilter );
+			viewHolder.wifiP2pRefreshButton.callOnClick();
+		}
 		//viewHolder.bluetoothRefreshButton.callOnClick();
-		viewHolder.wifiP2pRefreshButton.callOnClick();
+		
 	}
 
 	@Override
@@ -141,7 +146,8 @@ public class MainActivity
 	protected void onPause()
 	{
 		super.onPause();
-		this.unregisterReceiver( p2pBroadcastReceiver );
+		if(isWiFiDirect)
+			this.unregisterReceiver( p2pBroadcastReceiver );
 	}
 
 	@Override
@@ -463,6 +469,7 @@ public class MainActivity
 			bluetoothSpinner = (Spinner) findViewById( R.id.a_main_bluetooth_spinner );
 			wifiP2pSpinner = (Spinner) findViewById( R.id.a_main_wifi_spinner );
 			moveAnotherActivity = (Button) findViewById( R.id.move_to_another_activity );
+			moveAnotherActivity.setBackgroundColor(Color.RED);
 			bluetoothDevices = new ArrayList<>();
 			bluetoothArrayAdapter = new TwoLineArrayAdapter( MainActivity.this, bluetoothDevices );
 			bluetoothArrayAdapter.setDropDownViewResource( R.layout.list_item_spinner );
@@ -486,12 +493,13 @@ public class MainActivity
 	            @Override
 	            public void run() {
 	            	moveAnotherActivity.setVisibility(Button.VISIBLE);;
+	            	moveAnotherActivity.setBackgroundColor(Color.GREEN);
 	            }
 	        });
 	    }
 		
 		public String intToIPv4(int i) {
-			   return ((i >> 24 ) & 0xFF ) + "." + ((i >> 16 ) & 0xFF) + "." +((i >> 8 ) & 0xFF) + "." +( i & 0xFF) ;
+			   return ((i) & 0xFF ) + "." + ((i >> 8 ) & 0xFF) + "." +((i >> 16 ) & 0xFF) + "." +( i >> 24 & 0xFF) ;
 		}
 
 		private void populateBtList()
@@ -582,10 +590,11 @@ public class MainActivity
 						WifiManager wifii= (WifiManager) getSystemService(Context.WIFI_SERVICE);
 						DhcpInfo d=wifii.getDhcpInfo();
 						ipv4 = intToIPv4(d.gateway);
+						
 					}else{
 						ipv4=clientTCP.getServerAddress();
 					}
-					myIntent.putExtra("CameraIP", clientTCP.getServerAddress()); //Optional parameters
+					myIntent.putExtra("CameraIP", ipv4); //Optional parameters
 					MainActivity.this.startActivity(myIntent);
 				}
 			} );

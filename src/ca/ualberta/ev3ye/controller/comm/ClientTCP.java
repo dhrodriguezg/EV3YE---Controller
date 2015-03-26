@@ -67,8 +67,8 @@ public class ClientTCP {
             public void run() {
             	try {
         			clientSocket = new Socket(serverAddress, TRANSFER_PORT);
-        			dataOutput = new DataOutputStream(clientSocket.getOutputStream());
         			dataInput = new DataInputStream(clientSocket.getInputStream());
+        			dataOutput = new DataOutputStream(clientSocket.getOutputStream());
         			clientSocket.setKeepAlive(true);
         		} catch (IOException e) {
         			e.printStackTrace();
@@ -81,9 +81,9 @@ public class ClientTCP {
 	
 	public boolean updateStream(String msg){
 		
-		if(isTransferingData){
+		if(isTransferingData)
 			return false; //Is still transfering data, skip the next frame.
-		}
+		
 		boolean requestCompleted = false;
 		boolean reconnect = false;
 		isTransferingData = true;

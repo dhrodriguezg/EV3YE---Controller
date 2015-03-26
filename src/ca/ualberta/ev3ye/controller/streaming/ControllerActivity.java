@@ -47,16 +47,8 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
     private Mat mOutput;
     private Mat mMatch;
     private boolean showVisualServoing = false;
-    private byte[] textureByteArray = null;
     
-    private MatOfByte mRawMarker = null;
-    private Mat mRgba = null;
-    private Mat mGray = null;
-    private Mat imageMat = null;
-    private MatOfByte bufByte = null;
-	private byte[] texture = null;
-	private Bitmap bitmap = null;
-    
+	
 	protected BaseLoaderCallback mOpenCVCallBack = new BaseLoaderCallback(this) {
 	    @Override
 	    public void onManagerConnected(int status) {
@@ -72,6 +64,7 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
                     mMatch = new Mat(10,1,CvType.CV_32FC1);
                 	
 					InputStream is = getResources().openRawResource(R.raw.panel_07_jpg);
+					
                     byte[] rawMarker = new byte[is.available()];
 					is.read(rawMarker);
 					MatOfByte mRawMarker = new MatOfByte(rawMarker);
@@ -81,6 +74,7 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
                     FindFeatures(mMarker.getNativeObjAddr(), mMarkerKP.getNativeObjAddr(), mMarkerDesc.getNativeObjAddr());
                     
                     Log.i(TAG, "Marker loaded successfully :D "+mMarkerKP.rows());
+                                        
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
@@ -97,7 +91,7 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
     
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-    	
+
     	Intent intent = getIntent();
     	clientTCP = new ClientTCP(intent.getStringExtra("CameraIP"), true);
     	
@@ -164,45 +158,50 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
             public void run() {
                 boolean stop=false;
                 //serverTCP.initServices(0);
+                Bitmap bitmap;
                 while(!stop){
+                	
                 	double initime = System.currentTimeMillis();
-                	
                 	boolean success = clientTCP.updateStream(""+height);
-                	textureByteArray = clientTCP.getPicture();
+                	final byte[] textureByteArray = clientTCP.getPicture();
                 	
-                	if(!success)
+                	if(!success){
                 		continue;
+                	}
                 	if(textureByteArray==null)
                         continue;
                 	
                 	if(showVisualServoing){
                 		//Load the image using OCV
-                        mRawMarker = new MatOfByte(textureByteArray);
-                        mRgba = Highgui.imdecode(mRawMarker, Highgui.CV_LOAD_IMAGE_COLOR);
-                        mGray = new Mat();
-                        Imgproc.cvtColor(mRgba, mGray, Imgproc.COLOR_RGBA2GRAY, 1);
+                		MatOfByte mRawMarker = new MatOfByte(textureByteArray);
+                        //Mat mRgba = Highgui.imdecode(mRawMarker, Highgui.CV_LOAD_IMAGE_COLOR);
+                        //Mat mGray = new Mat();
+                        //Imgproc.cvtColor(mRgba, mGray, Imgproc.COLOR_RGBA2GRAY, 1);
+                        
+                        Mat mRgba = Highgui.imdecode(mRawMarker, Highgui.CV_LOAD_IMAGE_GRAYSCALE);
+                        Mat mGray = new Mat();
+                        Imgproc.threshold(mRgba, mGray, 128, 255, Imgproc.THRESH_BINARY);
                         
                         MatchFeatures(mMarker.getNativeObjAddr(), mGray.getNativeObjAddr(), mRgba.getNativeObjAddr(), mOutput.getNativeObjAddr(), mMatch.getNativeObjAddr(), true);
                         
-                        imageMat = new Mat();
+                        Mat imageMat = new Mat();
                         if (mOutput.channels()==1)
                         	Imgproc.cvtColor(mOutput, imageMat, Imgproc.COLOR_GRAY2BGR, 3);
                         else
                         	Imgproc.cvtColor(mOutput, imageMat, Imgproc.COLOR_RGBA2RGB, 3);
                         	
-                        bufByte = new MatOfByte();
+                        MatOfByte bufByte = new MatOfByte();
                     	Highgui.imencode(".jpg", imageMat, bufByte);
-                    	texture = bufByte.toArray();
+                    	byte[] texture = bufByte.toArray();
                     	bitmap = BitmapFactory.decodeByteArray(texture, 0, texture.length);
                 	}else{
                 		bitmap = BitmapFactory.decodeByteArray(textureByteArray, 0, textureByteArray.length);
                 	}
-                	double endtime = System.currentTimeMillis();
-                	
-                	Log.e("FPS",""+1000/(endtime-initime));
                 	//float [] corners = new float[10];
                 	//mMatch.get(0, 0,corners);
-                	
+					
+					double endtime = System.currentTimeMillis();
+					Log.e("FPS",""+1000/(endtime-initime));
                     refreshView(bitmap);
                 }
             }
