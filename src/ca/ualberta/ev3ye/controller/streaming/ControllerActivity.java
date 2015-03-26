@@ -37,7 +37,6 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
 	private static final String TAG = "ControllerActivity"; 
 	private ImageView imageView;
 	private ClientTCP clientTCP;
-    //private ServerTCP serverTCP;
     private int height = 0;
     
     private Mat mMarker;
@@ -110,8 +109,8 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
                 Bitmap bitmap = BitmapFactory.decodeStream(is);
                 button.setVisibility(View.GONE);
                 imageView.setImageBitmap(bitmap);
-                //clientTCP.connect2Server();
                 updateStream();
+                updateControls();
             }
         });
         
@@ -150,6 +149,26 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
             }
         });
     }
+    
+    private void updateControls(){
+    	Thread thread = new Thread() {
+            public void run() {
+            	boolean stop=false;
+            	while(!stop){
+            		//TODO logic to send controller ""+height
+            		try {
+						Thread.sleep(10); //100fps
+						clientTCP.updateController("0;"+height);
+						
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+            		
+            	}
+            }
+        };
+        thread.start();
+    }
 
     private void updateStream(){
 
@@ -162,7 +181,7 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
                 while(!stop){
                 	
                 	double initime = System.currentTimeMillis();
-                	boolean success = clientTCP.updateStream(""+height);
+                	boolean success = clientTCP.updateStream();
                 	final byte[] textureByteArray = clientTCP.getPicture();
                 	
                 	if(!success){

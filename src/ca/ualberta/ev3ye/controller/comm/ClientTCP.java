@@ -12,21 +12,27 @@ import android.util.Log;
 public class ClientTCP {
 	
 	private static final String TAG = "ClientTCP";
-	private static final int GREETING_PORT = 5555;
-	private static final int TRANSFER_PORT = 8888;
+	private static final int GREETING_PORT = 7777;
+	private static final int STREAMING_PORT = 8888;
+	private static final int CONTROLLER_PORT = 9999;
 	
 	private boolean isDirectWIFI = false;
 	private String serverAddress=null;
 	
 	private boolean isEV3Camera = false;
 	
-	private Socket clientSocket = null;
-	private DataOutputStream dataOutput = null;
-	private DataInputStream dataInput = null;
-	private boolean isTransferingData = false;
-	private byte[] picture = null;
+	private Socket streamingSocket = null;
+	private DataOutputStream streamingOutput = null;
+	private DataInputStream streamingInput = null;
+	private boolean isTransferingStreaming = false;
 	
-	private String btDevices = "";
+	private Socket controllerSocket = null;
+	private DataOutputStream controllerOutput = null;
+	private DataInputStream controllerInput = null;
+	private boolean isTransferingController = false;
+	
+	private byte[] picture = null;
+	private String controls = "";
 	
 	public ClientTCP(String host, boolean isP2PiP){
 		serverAddress = host;
@@ -50,9 +56,7 @@ public class ClientTCP {
 			
 			dataOutput.writeUTF("Are you EV3 Camera?");
 			isEV3Camera = dataInput.readBoolean();
-			if(isEV3Camera){
-				btDevices=dataInput.readUTF();
-			}
+			
     		dataOutput.close();
     		dataInput.close();
     		serverGreeting.close();
@@ -62,14 +66,30 @@ public class ClientTCP {
 		return isEV3Camera;
 	}
 	
-	public void connect2Server(){
+	public void connect2Steaming(){
 		Thread thread = new Thread() {
             public void run() {
             	try {
-        			clientSocket = new Socket(serverAddress, TRANSFER_PORT);
-        			dataInput = new DataInputStream(clientSocket.getInputStream());
-        			dataOutput = new DataOutputStream(clientSocket.getOutputStream());
-        			clientSocket.setKeepAlive(true);
+        			streamingSocket = new Socket(serverAddress, STREAMING_PORT);
+        			streamingInput = new DataInputStream(streamingSocket.getInputStream());
+        			streamingOutput = new DataOutputStream(streamingSocket.getOutputStream());
+        			streamingSocket.setKeepAlive(true);
+        		} catch (IOException e) {
+        			e.printStackTrace();
+        		}
+            }
+        };
+        thread.start();
+	}
+	
+	public void connect2Controller(){
+		Thread thread = new Thread() {
+            public void run() {
+            	try {
+        			controllerSocket = new Socket(serverAddress, CONTROLLER_PORT);
+        			controllerInput = new DataInputStream(controllerSocket.getInputStream());
+        			controllerOutput = new DataOutputStream(controllerSocket.getOutputStream());
+        			controllerSocket.setKeepAlive(true);
         		} catch (IOException e) {
         			e.printStackTrace();
         		}
@@ -79,17 +99,17 @@ public class ClientTCP {
 	}
 	
 	
-	public boolean updateStream(String msg){
+	public boolean updateStream(){
 		
-		if(isTransferingData)
+		if(isTransferingStreaming)
 			return false; //Is still transfering data, skip the next frame.
 		
 		boolean requestCompleted = false;
 		boolean reconnect = false;
-		isTransferingData = true;
+		isTransferingStreaming = true;
 		int requestNumber = 0;
 		
-		if(clientSocket==null)
+		if(streamingSocket==null)
 			reconnect=true;
 		
 		while (!requestCompleted && requestNumber++ < 100){ //100 tries
@@ -98,27 +118,27 @@ public class ClientTCP {
 				
 				if(reconnect){
 					
-					if(clientSocket!=null && !clientSocket.isClosed())
-						clientSocket.close();
+					if(streamingSocket!=null && !streamingSocket.isClosed())
+						streamingSocket.close();
 					Log.e(TAG, "Client disconnected, connecting...");
-					clientSocket = new Socket(serverAddress, TRANSFER_PORT);
-					dataOutput = new DataOutputStream(clientSocket.getOutputStream());
-					dataInput = new DataInputStream(clientSocket.getInputStream());
-					clientSocket.setKeepAlive(true);
+					streamingSocket = new Socket(serverAddress, STREAMING_PORT);
+					streamingOutput = new DataOutputStream(streamingSocket.getOutputStream());
+					streamingInput = new DataInputStream(streamingSocket.getInputStream());
+					streamingSocket.setKeepAlive(true);
 					Log.i(TAG, "***Client connected");
 					reconnect = false;
 				}
 				
-				while(dataInput.available()==0){ //maybe this device is going too fast, so wait until there is new data...
+				while(streamingInput.available()==0){ //maybe this device is going too fast, so wait until there is new data...
                     Thread.sleep(1);
                 }
                 //Transfering picture
-                int arrayLength = dataInput.readInt();
+                int arrayLength = streamingInput.readInt();
                 picture = new byte[arrayLength];
                 Log.i(TAG, "Receiving: "+arrayLength);
-                dataInput.readFully(picture);
-
-                dataOutput.writeUTF(msg);
+                streamingInput.readFully(picture);
+                //Sending ACK
+                streamingOutput.writeBoolean(true);
 				
 				//Data transfer completed
 				requestCompleted = true;				
@@ -131,24 +151,75 @@ public class ClientTCP {
 				e.printStackTrace();
 			}
 		}
-		isTransferingData = false;
+		isTransferingStreaming = false;
 		return requestCompleted;
 	}
 	
-	private boolean updateControls(){
-		// TODO  controls make the code to update controls.....
-		return true;
+	public boolean updateController(String msg){
+		
+		if(isTransferingController)
+			return false; //Is still transfering data, skip the next frame.
+		
+		boolean requestCompleted = false;
+		boolean reconnect = false;
+		isTransferingController = true;
+		int requestNumber = 0;
+		
+		if(controllerSocket==null)
+			reconnect=true;
+		
+		while (!requestCompleted && requestNumber++ < 100){ //100 tries
+			Log.i(TAG, "Sending Data to server...");
+			try {
+				
+				if(reconnect){
+					
+					if(controllerSocket!=null && !controllerSocket.isClosed())
+						controllerSocket.close();
+					Log.e(TAG, "Client disconnected, connecting...");
+					controllerSocket = new Socket(serverAddress, CONTROLLER_PORT);
+					controllerOutput = new DataOutputStream(controllerSocket.getOutputStream());
+					controllerInput = new DataInputStream(controllerSocket.getInputStream());
+					controllerSocket.setKeepAlive(true);
+					Log.i(TAG, "***Client connected");
+					reconnect = false;
+				}
+				
+				//Sending Controls
+                controllerOutput.writeUTF(msg);;
+                controllerOutput.flush();
+                
+				while(controllerInput.available()==0){ //maybe this device is going too fast, so wait until there is new data...
+                    Thread.sleep(1);
+                }
+                //Receiving ACK
+                controllerInput.readBoolean();
+
+				//Data transfer completed
+				requestCompleted = true;				
+				Log.i(TAG, "Data sent successfully, tries: "+requestNumber);
+			} catch (IOException e) {
+				Log.e(TAG, "Sudden disconnection from the Server °O° ");
+				e.printStackTrace();
+				reconnect = true;
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+		isTransferingController = false;
+		return requestCompleted;
 	}
+	
 	
 	public void shutdown(){
 		try {
-			if(clientSocket!=null && !clientSocket.isClosed())
-				clientSocket.close();
+			if(streamingSocket!=null && !streamingSocket.isClosed())
+				streamingSocket.close();
 		} catch (IOException e) {
 			e.printStackTrace();
-			Log.e(TAG, "Client socket not closed properly, check port availability: "+TRANSFER_PORT);
+			Log.e(TAG, "Client socket not closed properly, check port availability: "+STREAMING_PORT);
 		}
-		clientSocket=null;
+		streamingSocket=null;
 	}
 	
 	public String getServerAddress() {
@@ -157,14 +228,6 @@ public class ClientTCP {
 
 	public void setServerAddress(String serverAddress) {
 		this.serverAddress = serverAddress;
-	}
-
-	public String getBtDevices() {
-		return btDevices;
-	}
-
-	public void setBtDevices(String btDevices) {
-		this.btDevices = btDevices;
 	}
 	
 	public byte[] getPicture() {
