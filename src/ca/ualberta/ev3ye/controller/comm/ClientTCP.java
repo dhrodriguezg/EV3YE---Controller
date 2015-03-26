@@ -32,7 +32,6 @@ public class ClientTCP {
 	private boolean isTransferingController = false;
 	
 	private byte[] picture = null;
-	private String controls = "";
 	
 	public ClientTCP(String host, boolean isP2PiP){
 		serverAddress = host;
@@ -120,7 +119,7 @@ public class ClientTCP {
 					
 					if(streamingSocket!=null && !streamingSocket.isClosed())
 						streamingSocket.close();
-					Log.e(TAG, "Client disconnected, connecting...");
+					Log.e(TAG, "Client disconnected, connecting to..."+serverAddress);
 					streamingSocket = new Socket(serverAddress, STREAMING_PORT);
 					streamingOutput = new DataOutputStream(streamingSocket.getOutputStream());
 					streamingInput = new DataInputStream(streamingSocket.getInputStream());
@@ -169,37 +168,38 @@ public class ClientTCP {
 			reconnect=true;
 		
 		while (!requestCompleted && requestNumber++ < 100){ //100 tries
-			Log.i(TAG, "Sending Data to server...");
+			Log.i(TAG, "Sending Controller to server..."+msg);
 			try {
 				
 				if(reconnect){
 					
 					if(controllerSocket!=null && !controllerSocket.isClosed())
 						controllerSocket.close();
-					Log.e(TAG, "Client disconnected, connecting...");
+					Log.e(TAG, "Client disconnected, connecting to..."+serverAddress);
 					controllerSocket = new Socket(serverAddress, CONTROLLER_PORT);
 					controllerOutput = new DataOutputStream(controllerSocket.getOutputStream());
 					controllerInput = new DataInputStream(controllerSocket.getInputStream());
 					controllerSocket.setKeepAlive(true);
-					Log.i(TAG, "***Client connected");
+					Log.i(TAG, "Controller connected");
 					reconnect = false;
 				}
 				
 				//Sending Controls
-                controllerOutput.writeUTF(msg);;
+                controllerOutput.writeUTF(msg);
                 controllerOutput.flush();
-                
+                Log.i(TAG, "Controller sent msg");
 				while(controllerInput.available()==0){ //maybe this device is going too fast, so wait until there is new data...
                     Thread.sleep(1);
                 }
                 //Receiving ACK
+				Log.i(TAG, "Controller reading ack");
                 controllerInput.readBoolean();
 
 				//Data transfer completed
 				requestCompleted = true;				
-				Log.i(TAG, "Data sent successfully, tries: "+requestNumber);
+				Log.i(TAG, "Controller sent successfully, tries: "+requestNumber);
 			} catch (IOException e) {
-				Log.e(TAG, "Sudden disconnection from the Server °O° ");
+				Log.e(TAG, "Sudden disconnection from the controller °O° ");
 				e.printStackTrace();
 				reconnect = true;
 			} catch (InterruptedException e) {

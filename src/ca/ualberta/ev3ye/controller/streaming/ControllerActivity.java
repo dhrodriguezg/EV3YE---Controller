@@ -37,7 +37,7 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
 	private static final String TAG = "ControllerActivity"; 
 	private ImageView imageView;
 	private ClientTCP clientTCP;
-    private int height = 0;
+	
     
     private Mat mMarker;
     private MatOfKeyPoint mMarkerKP;
@@ -46,7 +46,13 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
     private Mat mOutput;
     private Mat mMatch;
     private boolean showVisualServoing = false;
+    private final static int MAX_POWER = 70;
     
+    private int operator = 1;
+    private int leftPower = 0;
+	private int rightPower = 0;
+    private int cameraHeight = 100;
+    private String reserved = "";
 	
 	protected BaseLoaderCallback mOpenCVCallBack = new BaseLoaderCallback(this) {
 	    @Override
@@ -93,8 +99,14 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
 
     	Intent intent = getIntent();
     	clientTCP = new ClientTCP(intent.getStringExtra("CameraIP"), true);
-    	
         super.onCreate(savedInstanceState);
+        
+        //TODO delete this when manual operation is working...
+        /*
+        operator = 1;
+	    leftPower = 45;
+		rightPower = -45;
+	    */
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         setContentView(R.layout.activity_controller);
@@ -114,8 +126,8 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
             }
         });
         
-        ToggleButton toggle = (ToggleButton) findViewById(R.id.tracking);
-        /*toggle.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+        /*ToggleButton toggle = (ToggleButton) findViewById(R.id.tracking);
+        toggle.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if (isChecked) {
                 	showVisualServoing = true;
@@ -125,12 +137,13 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
             }
         });*/
 
-        final SeekBar seekBar = (SeekBar) findViewById(R.id.seekBar);
+        SeekBar seekBar = (SeekBar) findViewById(R.id.seekBar);
+        seekBar.setProgress(cameraHeight);
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                height=progress;
-                Log.i("SeekBar","value:"+height);
+                cameraHeight=progress;
+                Log.i("SeekBar","value:"+cameraHeight);
             }
             @Override
             public void onStartTrackingTouch(SeekBar seekBar) {
@@ -155,11 +168,20 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
             public void run() {
             	boolean stop=false;
             	while(!stop){
-            		//TODO logic to send controller ""+height
             		try {
 						Thread.sleep(10); //100fps
-						clientTCP.updateController("0;"+height);
-						
+						/**
+						operator = 1 (from gamepad) , 2 (from touchscreen) , 3 (from acelerometers) , 4 (visual servoig)
+						leftMotor power (-100 : 100 )
+						rightMotor power (-100 : 100)
+						cameraheight (0 : 100)
+						*/
+						if(operator!=4){//Only for manual operation
+						    String controllerInput = ":"+operator+";"+leftPower+";"+rightPower+";"+cameraHeight;
+							clientTCP.updateController(controllerInput);
+						}else{ //Automatic operation.
+							clientTCP.updateController(":"+reserved);
+						}
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
@@ -190,16 +212,21 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
                 	if(textureByteArray==null)
                         continue;
                 	
+                	rightPower = 0;
+                	leftPower = 0;
+                	operator = 1;
+                	
                 	if(showVisualServoing){
                 		//Load the image using OCV
                 		MatOfByte mRawMarker = new MatOfByte(textureByteArray);
-                        //Mat mRgba = Highgui.imdecode(mRawMarker, Highgui.CV_LOAD_IMAGE_COLOR);
-                        //Mat mGray = new Mat();
-                        //Imgproc.cvtColor(mRgba, mGray, Imgproc.COLOR_RGBA2GRAY, 1);
-                        
-                        Mat mRgba = Highgui.imdecode(mRawMarker, Highgui.CV_LOAD_IMAGE_GRAYSCALE);
+                        Mat mRgba = Highgui.imdecode(mRawMarker, Highgui.CV_LOAD_IMAGE_COLOR);
                         Mat mGray = new Mat();
-                        Imgproc.threshold(mRgba, mGray, 128, 255, Imgproc.THRESH_BINARY);
+                        Imgproc.cvtColor(mRgba, mGray, Imgproc.COLOR_RGBA2GRAY, 1);
+                        
+                		
+                        /*Mat mRgba = Highgui.imdecode(mRawMarker, Highgui.CV_LOAD_IMAGE_GRAYSCALE);
+                        Mat mGray = new Mat();
+                        Imgproc.threshold(mRgba, mGray, 128, 255, Imgproc.THRESH_BINARY);*/
                         
                         MatchFeatures(mMarker.getNativeObjAddr(), mGray.getNativeObjAddr(), mRgba.getNativeObjAddr(), mOutput.getNativeObjAddr(), mMatch.getNativeObjAddr(), true);
                         
@@ -211,14 +238,20 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
                         	
                         MatOfByte bufByte = new MatOfByte();
                     	Highgui.imencode(".jpg", imageMat, bufByte);
+                    	
+                    	float [] corners = new float[10];
+                    	mMatch.get(0, 0,corners);
+                    	
+                    	rightPower = (int) (MAX_POWER*(1 - 2*corners[0]/mRgba.cols()));
+                    	leftPower = -rightPower;
+                    	operator = 1;
+                    	
                     	byte[] texture = bufByte.toArray();
                     	bitmap = BitmapFactory.decodeByteArray(texture, 0, texture.length);
                 	}else{
                 		bitmap = BitmapFactory.decodeByteArray(textureByteArray, 0, textureByteArray.length);
                 	}
-                	//float [] corners = new float[10];
-                	//mMatch.get(0, 0,corners);
-					
+                	
 					double endtime = System.currentTimeMillis();
 					Log.e("FPS",""+1000/(endtime-initime));
                     refreshView(bitmap);
