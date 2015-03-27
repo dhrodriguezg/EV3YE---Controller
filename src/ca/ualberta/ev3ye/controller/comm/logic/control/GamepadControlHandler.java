@@ -1,5 +1,6 @@
 package ca.ualberta.ev3ye.controller.comm.logic.control;
 
+import android.util.Pair;
 import android.view.InputDevice;
 import android.view.MotionEvent;
 
@@ -106,8 +107,8 @@ public class GamepadControlHandler
 	public void receiveControlEvent( Object event )
 	{
 		latestData.update( (MotionEvent) event );
-		String controlMsg = controlScheme.getControlMessage( latestData );
-		callbackTarget.onControlEventResult( controlMsg );
+		Pair<Integer, Integer> controls = controlScheme.getControl(latestData);
+		callbackTarget.onControlEventResult( controls.first, controls.second );
 	}
 
 	@Override
@@ -156,16 +157,15 @@ public class GamepadControlHandler
 
 	public abstract class GamepadControlScheme
 	{
-		public abstract String getControlMessage( GamepadControlData data );
+		public abstract Pair<Integer, Integer> getControl( GamepadControlData data );
 		public abstract String getName();
 	}
 
 	public class HaloControlScheme
 			extends GamepadControlScheme
 	{
-
 		@Override
-		public String getControlMessage( GamepadControlData data )
+		public Pair<Integer, Integer> getControl( GamepadControlData data )
 		{
 			// Throttle is controlled with the right stick,
 			// Steering is controlled with the left.
@@ -194,12 +194,7 @@ public class GamepadControlHandler
 				motorR = ( steering < 0 ) ? motorR : -motorR;
 			}
 
-			return formatControlMsg( motorL, motorR );
-		}
-
-		private String formatControlMsg( float motorL, float motorR )
-		{
-			return String.format( CTRL_STR_FORMAT, motorL, motorR );
+			return new Pair<>((int) motorL, (int) motorR);
 		}
 
 		@Override

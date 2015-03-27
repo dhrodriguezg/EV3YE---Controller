@@ -11,6 +11,7 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.Toast;
 import android.widget.ToggleButton;
 import android.graphics.BitmapFactory;
 import android.widget.SeekBar;
@@ -31,13 +32,15 @@ import org.opencv.imgproc.Imgproc;
 
 import ca.ualberta.ev3ye.controller.R;
 import ca.ualberta.ev3ye.controller.comm.ClientTCP;
+import ca.ualberta.ev3ye.controller.comm.logic.control.ControlHandler.ControlEventCallbacks;
+import ca.ualberta.ev3ye.controller.comm.logic.control.ControlSystem;
+import ca.ualberta.ev3ye.controller.comm.logic.control.GamepadControlHandler;
 
-public class ControllerActivity extends Activity implements LoaderCallbackInterface{
+public class ControllerActivity extends Activity implements LoaderCallbackInterface, ControlEventCallbacks{
 	
 	private static final String TAG = "ControllerActivity"; 
 	private ImageView imageView;
 	private ClientTCP clientTCP;
-	
     
     private Mat mMarker;
     private MatOfKeyPoint mMarkerKP;
@@ -53,6 +56,8 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
 	private int rightPower = 0;
     private int cameraHeight = 100;
     private String reserved = "";
+    
+    private ControlSystem controls = null;
 	
 	protected BaseLoaderCallback mOpenCVCallBack = new BaseLoaderCallback(this) {
 	    @Override
@@ -100,6 +105,8 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
     	Intent intent = getIntent();
     	clientTCP = new ClientTCP(intent.getStringExtra("CameraIP"), true);
         super.onCreate(savedInstanceState);
+        
+        controls = new ControlSystem( new GamepadControlHandler(this));
         
         //TODO delete this when manual operation is working...
         /*
@@ -311,5 +318,23 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
 	public native void FindFeatures(long matAddrGray, long matAddrKeypoint, long matAddrDescriptor);
 	
 	public native void MatchFeatures(long matAddrMarker, long matAddrScene, long matAddrSceneRgba, long matAddrOutput, long matAddrMatches, boolean debug);
-	
+
+	@Override
+	public void onHandlerSetupFailure(String msg)
+	{
+		Toast.makeText(this, "The controler setup failed! " + msg, Toast.LENGTH_LONG).show();
+	}
+
+	@Override
+	public void onHandlerStateChanged(String msg, int ID, boolean OK)
+	{
+		Toast.makeText(this, "The controller hardware state changed: " + msg, Toast.LENGTH_LONG).show();
+	}
+
+	@Override
+	public void onControlEventResult(int leftMotor, int rightMotor)
+	{
+		leftPower = leftMotor;
+		rightPower = rightMotor;
+	}
 }

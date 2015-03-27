@@ -76,9 +76,10 @@ public abstract class ControlHandler
 		 * portion of the control string associated with motor control, and may need further
 		 * processing before sending it over WiFi to the slave device.
 		 *
-		 * @param controlMessage A formatted control string.
+		 * @param leftMotor A formatted control string.
+		 * @param rightMotor TODO
 		 */
-		public void onControlEventResult( String controlMessage );
+		public void onControlEventResult( int leftMotor, int rightMotor );
 	}
 
 	/**
@@ -109,13 +110,9 @@ public abstract class ControlHandler
 		}
 
 		@Override
-		public void onControlEventResult( String msg )
+		public void onControlEventResult( int leftMotor, int rightMotor )
 		{
-			if ( msg == null )
-			{
-				msg = "null";
-			}
-			Log.v( "ControlHandler", "onControlEventResult( controlMessage:" + msg + " )" );
+			Log.v( "ControlHandler", "onControlEventResult( leftMotor:" + leftMotor + " rightMotor:" + rightMotor +" )" );
 		}
 	}
 }
