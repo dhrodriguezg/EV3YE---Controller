@@ -105,9 +105,7 @@ public class GamepadControlHandler
 	@Override
 	public void receiveControlEvent( Object event )
 	{
-		latestData.update( (MotionEvent) event );
-		Pair<Integer, Integer> controls = controlScheme.getControl(latestData);
-		callbackTarget.onControlEventResult( controls.first, controls.second );
+		// Do nothing!
 	}
 
 	@Override
@@ -201,5 +199,20 @@ public class GamepadControlHandler
 		{
 			return "Halo Scheme";
 		}
+	}
+
+	@Override
+	public boolean receiveGenericMotionEvent(MotionEvent event)
+	{
+        if ((event.getSource() & InputDevice.SOURCE_JOYSTICK) ==
+                InputDevice.SOURCE_JOYSTICK &&
+                event.getAction() == MotionEvent.ACTION_MOVE)
+        {            
+    		latestData.update( event );
+    		Pair<Integer, Integer> controls = controlScheme.getControl(latestData);
+    		callbackTarget.onControlEventResult( controls.first, controls.second );
+            return true;
+        }
+        else return false;
 	}
 }

@@ -1,6 +1,7 @@
 package ca.ualberta.ev3ye.controller.comm.logic.control;
 
 import android.util.Log;
+import android.view.MotionEvent;
 
 /**
  * Created by Yuey on 2015-03-25.
@@ -23,12 +24,25 @@ public abstract class ControlHandler
 	}
 
 	/**
-	 * A method for the handler to receive a control event if the handler is not designed to accept
+	 * A method for the handler to receive a control event if the handler is not designed to process
 	 * them automatically.
 	 *
 	 * @param event The event data to be passed to the handler.
 	 */
-	public abstract void receiveControlEvent( Object event );
+	public void receiveControlEvent( Object event )
+	{
+		// Do nothing
+	}
+	
+	/**
+	 * A method for the handler to receive motion events from the hosting activity.
+	 * @param event The event data to be passed to the handler.
+	 * @return True if the handler consumed the event, false otherwise.
+	 */
+	public boolean receiveGenericMotionEvent(MotionEvent event)
+	{
+		return false;
+	}
 
 	/**
 	 * To be called when the handler is no longer needed, and should execute its code to release

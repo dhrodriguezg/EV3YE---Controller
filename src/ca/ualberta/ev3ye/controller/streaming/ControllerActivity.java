@@ -166,15 +166,7 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
     @Override
     public boolean onGenericMotionEvent(MotionEvent event)
     {
-        // Check that the event came from a game controller
-        if ((event.getSource() & InputDevice.SOURCE_JOYSTICK) ==
-                InputDevice.SOURCE_JOYSTICK &&
-                event.getAction() == MotionEvent.ACTION_MOVE) {
 
-        	controls.onGenericMotionEvent(event);
-            
-            return true;
-        }
         return super.onGenericMotionEvent(event);
     }
     

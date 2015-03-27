@@ -33,11 +33,12 @@ public class ControlSystem
 		this.controlState = newState;
 	}
 	
-	public void onGenericMotionEvent(MotionEvent event)
+	public boolean onGenericMotionEvent(MotionEvent event)
 	{
 		if (controlState != null)
 		{
-			controlState.receiveControlEvent(event);
+			return controlState.receiveGenericMotionEvent(event);
 		}
+		else return false;
 	}
 }

@@ -5,6 +5,7 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.view.MotionEvent;
 
 /**
  * Created by Yuey on 2015-03-25.
@@ -16,12 +17,6 @@ public class TiltControlHandler
 	public TiltControlHandler( ControlEventCallbacks callbackTarget )
 	{
 		super( callbackTarget );
-	}
-
-	@Override
-	public void receiveControlEvent( Object event )
-	{
-		// Nothing to do here!
 	}
 
 	@Override
