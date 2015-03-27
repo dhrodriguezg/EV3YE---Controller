@@ -1,5 +1,6 @@
 package ca.ualberta.ev3ye.controller.comm.logic.control;
 
+import android.view.MotionEvent;
 import ca.ualberta.ev3ye.controller.comm.auxiliary.Helper;
 
 /**
@@ -30,5 +31,13 @@ public class ControlSystem
 
 		this.controlState.cleanup();
 		this.controlState = newState;
+	}
+	
+	public void onGenericMotionEvent(MotionEvent event)
+	{
+		if (controlState != null)
+		{
+			controlState.receiveControlEvent(event);
+		}
 	}
 }

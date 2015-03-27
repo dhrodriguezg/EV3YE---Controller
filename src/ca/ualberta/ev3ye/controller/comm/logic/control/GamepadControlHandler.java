@@ -16,7 +16,6 @@ public class GamepadControlHandler
 {
 	public static final    String                                  NAME                = "Gamepad";
 	protected static final float                                   CONTROL_INPUT_SCALE = 100.0f;
-	private static final   String                                  CTRL_STR_FORMAT     = ";%f_%f";
 	protected              InputDevice                             inputDevice         = null;
 	protected              Map< Integer, InputDevice.MotionRange > motionRanges        = null;
 	protected              GamepadControlData                      latestData          = new GamepadControlData();

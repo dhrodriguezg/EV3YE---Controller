@@ -5,8 +5,10 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.InputDevice;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
@@ -161,6 +163,21 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
         });
     }
 
+    @Override
+    public boolean onGenericMotionEvent(MotionEvent event)
+    {
+        // Check that the event came from a game controller
+        if ((event.getSource() & InputDevice.SOURCE_JOYSTICK) ==
+                InputDevice.SOURCE_JOYSTICK &&
+                event.getAction() == MotionEvent.ACTION_MOVE) {
+
+        	controls.onGenericMotionEvent(event);
+            
+            return true;
+        }
+        return super.onGenericMotionEvent(event);
+    }
+    
     private void refreshView(final Bitmap bitmap){
         runOnUiThread(new Runnable() {
             @Override
