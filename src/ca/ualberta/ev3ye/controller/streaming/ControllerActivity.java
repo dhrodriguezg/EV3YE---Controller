@@ -166,8 +166,7 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
     @Override
     public boolean onGenericMotionEvent(MotionEvent event)
     {
-
-        return super.onGenericMotionEvent(event);
+        return controls.onGenericMotionEvent(event);
     }
     
     private void refreshView(final Bitmap bitmap){
@@ -314,8 +313,6 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
         return super.onOptionsItemSelected(item);
     }
 
-    
-    
 	@Override
 	public void onManagerConnected(int status) {
 	}
@@ -331,7 +328,7 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
 	@Override
 	public void onHandlerSetupFailure(String msg)
 	{
-		Toast.makeText(this, "The controler setup failed! " + msg, Toast.LENGTH_LONG).show();
+		Toast.makeText(this, "The controler setup failed: " + msg, Toast.LENGTH_LONG).show();
 	}
 
 	@Override
