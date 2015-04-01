@@ -1,4 +1,4 @@
-package ca.ualberta.ev3ye.controller.comm.logic.control;
+package ca.ualberta.ev3ye.controller.control;
 
 import android.view.MotionEvent;
 import ca.ualberta.ev3ye.controller.comm.auxiliary.Helper;

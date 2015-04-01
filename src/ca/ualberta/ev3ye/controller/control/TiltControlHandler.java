@@ -1,4 +1,4 @@
-package ca.ualberta.ev3ye.controller.comm.logic.control;
+package ca.ualberta.ev3ye.controller.control;
 
 import android.app.Activity;
 import android.content.Context;
@@ -127,5 +127,11 @@ public class TiltControlHandler
 		default:
 			break;
 		}
+	}
+
+	@Override
+	public void init()
+	{
+		manager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_GAME);
 	}
 }

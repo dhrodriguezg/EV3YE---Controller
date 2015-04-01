@@ -11,8 +11,11 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.Spinner;
 import android.widget.Toast;
 import android.widget.ToggleButton;
 import android.graphics.BitmapFactory;
@@ -34,10 +37,10 @@ import org.opencv.imgproc.Imgproc;
 
 import ca.ualberta.ev3ye.controller.R;
 import ca.ualberta.ev3ye.controller.comm.ClientTCP;
-import ca.ualberta.ev3ye.controller.comm.logic.control.ControlHandler.ControlEventCallbacks;
-import ca.ualberta.ev3ye.controller.comm.logic.control.ControlSystem;
-import ca.ualberta.ev3ye.controller.comm.logic.control.GamepadControlHandler;
-import ca.ualberta.ev3ye.controller.comm.logic.control.TiltControlHandler;
+import ca.ualberta.ev3ye.controller.control.ControlSystem;
+import ca.ualberta.ev3ye.controller.control.GamepadControlHandler;
+import ca.ualberta.ev3ye.controller.control.TiltControlHandler;
+import ca.ualberta.ev3ye.controller.control.ControlHandler.ControlEventCallbacks;
 
 public class ControllerActivity extends Activity implements LoaderCallbackInterface, ControlEventCallbacks{
 	
@@ -59,6 +62,8 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
 	private int rightPower = 0;
     private int cameraHeight = 100;
     private String reserved = "";
+    
+    private Spinner controlSpinner = null;
     
     private ControlSystem controls = null;
 	
@@ -162,6 +167,30 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
             public void onStopTrackingTouch(SeekBar seekBar) {
             }
         });
+        
+        controlSpinner = (Spinner) findViewById( R.id.controlTypeSpinner );
+        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this, R.array.control_types, android.R.layout.simple_spinner_dropdown_item);
+        controlSpinner.setAdapter(adapter);
+        controlSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener()
+		{
+			@Override
+			public void onItemSelected(AdapterView<?> arg0, View arg1,
+					int arg2, long arg3)
+			{
+				switch (arg0.getItemAtPosition(arg2).toString())
+				{
+				case "":
+				default:
+				}
+			}
+
+			@Override
+			public void onNothingSelected(AdapterView<?> arg0)
+			{
+				// TODO Auto-generated method stub
+				
+			}
+		});
     }
 
     @Override

@@ -8,6 +8,9 @@
 package ca.ualberta.ev3ye.controller;
 
 public final class R {
+    public static final class array {
+        public static final int control_types=0x7f090000;
+    }
     public static final class attr {
         /** <p>May be an integer value, such as "<code>100</code>".
 <p>This may also be a reference to a resource (in the form
@@ -61,24 +64,25 @@ containing a value of this type.
         public static final int ic_refresh_dark=0x7f020004;
     }
     public static final class id {
-        public static final int a_main_bluetooth_accept_button=0x7f0a0008;
-        public static final int a_main_bluetooth_refresh_button=0x7f0a0007;
-        public static final int a_main_bluetooth_spinner=0x7f0a0009;
-        public static final int a_main_frame=0x7f0a000d;
-        public static final int a_main_wifi_accept_button=0x7f0a000b;
-        public static final int a_main_wifi_refresh_button=0x7f0a000a;
-        public static final int a_main_wifi_spinner=0x7f0a000c;
-        public static final int action_settings=0x7f0a0011;
-        public static final int any=0x7f0a0000;
-        public static final int back=0x7f0a0001;
-        public static final int button=0x7f0a0004;
-        public static final int front=0x7f0a0002;
-        public static final int imageView1=0x7f0a0003;
-        public static final int li_spinner_subtitle=0x7f0a0010;
-        public static final int li_spinner_title=0x7f0a000f;
-        public static final int move_to_another_activity=0x7f0a000e;
-        public static final int seekBar=0x7f0a0006;
-        public static final int tracking=0x7f0a0005;
+        public static final int a_main_bluetooth_accept_button=0x7f0b0009;
+        public static final int a_main_bluetooth_refresh_button=0x7f0b0008;
+        public static final int a_main_bluetooth_spinner=0x7f0b000a;
+        public static final int a_main_frame=0x7f0b000e;
+        public static final int a_main_wifi_accept_button=0x7f0b000c;
+        public static final int a_main_wifi_refresh_button=0x7f0b000b;
+        public static final int a_main_wifi_spinner=0x7f0b000d;
+        public static final int action_settings=0x7f0b0012;
+        public static final int any=0x7f0b0000;
+        public static final int back=0x7f0b0001;
+        public static final int button=0x7f0b0004;
+        public static final int controlTypeSpinner=0x7f0b0007;
+        public static final int front=0x7f0b0002;
+        public static final int imageView1=0x7f0b0003;
+        public static final int li_spinner_subtitle=0x7f0b0011;
+        public static final int li_spinner_title=0x7f0b0010;
+        public static final int move_to_another_activity=0x7f0b000f;
+        public static final int seekBar=0x7f0b0006;
+        public static final int tracking=0x7f0b0005;
     }
     public static final class layout {
         public static final int activity_controller=0x7f040000;
@@ -86,7 +90,7 @@ containing a value of this type.
         public static final int list_item_spinner=0x7f040002;
     }
     public static final class menu {
-        public static final int menu_main=0x7f090000;
+        public static final int menu_main=0x7f0a0000;
     }
     public static final class mipmap {
         public static final int ic_launcher=0x7f030000;

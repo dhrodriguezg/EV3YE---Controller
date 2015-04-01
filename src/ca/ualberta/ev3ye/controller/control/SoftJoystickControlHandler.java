@@ -1,4 +1,4 @@
-package ca.ualberta.ev3ye.controller.comm.logic.control;
+package ca.ualberta.ev3ye.controller.control;
 
 import android.app.Activity;
 
@@ -29,5 +29,12 @@ public class SoftJoystickControlHandler
 	public String getName()
 	{
 		return "Soft Joystick";
+	}
+
+	@Override
+	public void init()
+	{
+		// TODO Auto-generated method stub
+		
 	}
 }

@@ -1,4 +1,4 @@
-package ca.ualberta.ev3ye.controller.comm.logic.control;
+package ca.ualberta.ev3ye.controller.control;
 
 import android.content.Context;
 import android.util.Log;
@@ -10,12 +10,12 @@ import android.view.MotionEvent;
  * A base class for a control system on Android. Intended to be used as the state within the state
  * machine ControlSystem.
  *
- * @see ca.ualberta.ev3ye.logic.control.ControlSystem
+ * @see ca.ualberta.ev3ye.controller.control.logic.control.ControlSystem
  */
 public abstract class ControlHandler
 {
 	/**
-	 * @see ca.ualberta.ev3ye.logic.control.ControlHandler.ControlEventCallbacks
+	 * @see ca.ualberta.ev3ye.controller.control.logic.control.ControlHandler.ControlEventCallbacks
 	 */
 	protected ControlEventCallbacks callbackTarget;
 
@@ -46,12 +46,15 @@ public abstract class ControlHandler
 	}
 	
 	/**
-	 * 
+	 * To be called when the handler should start accepting commands (for example, subclasses 
+	 * using sensors should register their listeners during this time).
 	 */
+	public abstract void init();
 
 	/**
 	 * To be called when the handler is no longer needed, and should execute its code to release
-	 * resources. Usually called when the app closes or when input methods are changed.
+	 * resources. Usually called when the app closes or when input methods are changed. Subclasses
+	 * using sensors should unregister their listeners on this call.
 	 */
 	public abstract void cleanup();
 

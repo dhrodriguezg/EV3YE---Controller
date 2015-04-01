@@ -1,4 +1,4 @@
-package ca.ualberta.ev3ye.controller.comm.logic.control;
+package ca.ualberta.ev3ye.controller.control;
 
 import android.util.Log;
 import android.util.Pair;
@@ -254,5 +254,12 @@ public class GamepadControlHandler
             return true;
         }
         else return false;
+	}
+
+	@Override
+	public void init()
+	{
+		// TODO Auto-generated method stub
+		
 	}
 }
