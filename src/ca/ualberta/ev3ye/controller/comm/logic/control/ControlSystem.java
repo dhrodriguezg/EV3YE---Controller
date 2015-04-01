@@ -29,7 +29,8 @@ public class ControlSystem
 		String newName = ( newState != null ) ? newState.getName() : "null";
 		Helper.LogV( "CTRL", "Control state switching from " + oldName + " to " + newName );
 
-		this.controlState.cleanup();
+		if(controlState != null)
+			this.controlState.cleanup();
 		this.controlState = newState;
 	}
 	

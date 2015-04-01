@@ -1,9 +1,11 @@
 package ca.ualberta.ev3ye.controller.comm.logic.control;
 
+import android.util.Log;
 import android.util.Pair;
 import android.view.InputDevice;
 import android.view.MotionEvent;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import ca.ualberta.ev3ye.controller.comm.auxiliary.Helper;
@@ -19,7 +21,7 @@ public class GamepadControlHandler
 	protected              InputDevice                             inputDevice         = null;
 	protected              Map< Integer, InputDevice.MotionRange > motionRanges        = null;
 	protected              GamepadControlData                      latestData          = new GamepadControlData();
-	protected              GamepadControlScheme                    controlScheme       = new HaloControlScheme();
+	protected              GamepadControlScheme                    controlScheme       = new ForzaControlScheme();
 
 	protected static final int AXISES[] = {
 			MotionEvent.AXIS_X,
@@ -34,6 +36,8 @@ public class GamepadControlHandler
 	{
 		super( callbackTarget );
 
+		motionRanges = new HashMap<>();
+		
 		int[] deviceIds = InputDevice.getDeviceIds();
 		int controllerID = -1;
 		for ( int deviceId : deviceIds )
@@ -122,7 +126,7 @@ public class GamepadControlHandler
 
 	public class GamepadControlData
 	{
-		public Map< Integer, Float > data;
+		public Map< Integer, Float > data = new HashMap<>();
 
 		public GamepadControlData()
 		{
@@ -154,15 +158,51 @@ public class GamepadControlHandler
 
 	public abstract class GamepadControlScheme
 	{
-		public abstract Pair<Integer, Integer> getControl( GamepadControlData data );
+		public abstract ControlerResultData getControl( GamepadControlData data );
 		public abstract String getName();
+	}
+	
+	public class ForzaControlScheme
+			extends GamepadControlScheme
+	{
+		@Override
+		public ControlerResultData getControl(GamepadControlData data)
+		{
+			float fwdBase = 
+					data.getAxisValue(MotionEvent.AXIS_RTRIGGER) - 
+					data.getAxisValue(MotionEvent.AXIS_LTRIGGER);
+			
+			float rot = 
+					data.getAxisValue(MotionEvent.AXIS_X);
+			
+			int cam = (int) (data.getAxisValue(MotionEvent.AXIS_RZ) * 5f);
+			
+			float
+				motorL = (fwdBase * 100) + (rot * 50),
+				motorR = (fwdBase * 100) - (rot * 50);
+			
+			// Clamp the values to [-100, 100]
+			if (motorL < -100 || motorL > 100)
+				motorL -= motorL % 100;
+			if (motorR < -100 || motorR > 100)
+				motorR -= motorR % 100;
+			
+			return new ControlerResultData((int) motorL, (int) motorR, cam);
+		}
+
+		@Override
+		public String getName()
+		{
+			return "Forza scheme";
+		}
+		
 	}
 
 	public class HaloControlScheme
 			extends GamepadControlScheme
 	{
 		@Override
-		public Pair<Integer, Integer> getControl( GamepadControlData data )
+		public ControlerResultData getControl( GamepadControlData data )
 		{
 			// Throttle is controlled with the right stick,
 			// Steering is controlled with the left.
@@ -179,7 +219,7 @@ public class GamepadControlHandler
 			// -1 we're turning left.
 
 			// For now, just threshold the left stick input.
-			float steering = data.getAxisValue( MotionEvent.AXIS_Y );
+			float steering = data.getAxisValue( MotionEvent.AXIS_X );
 			if ( Math.abs( steering ) < 0.25 )
 			{
 				steering = 0f;
@@ -191,7 +231,7 @@ public class GamepadControlHandler
 				motorR = ( steering < 0 ) ? motorR : -motorR;
 			}
 
-			return new Pair<>((int) motorL, (int) motorR);
+			return new ControlerResultData((int) motorL, (int) motorR, 0);
 		}
 
 		@Override
@@ -209,8 +249,8 @@ public class GamepadControlHandler
                 event.getAction() == MotionEvent.ACTION_MOVE)
         {            
     		latestData.update( event );
-    		Pair<Integer, Integer> controls = controlScheme.getControl(latestData);
-    		callbackTarget.onControlEventResult( controls.first, controls.second );
+    		ControlerResultData controls = controlScheme.getControl(latestData);
+    		callbackTarget.onControlEventResult( controls.L, controls.R, controls.C );
             return true;
         }
         else return false;

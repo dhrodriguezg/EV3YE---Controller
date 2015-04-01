@@ -450,9 +450,7 @@ public class MainActivity
 		public ImageButton                         bluetoothRefreshButton = null;
 		public ImageButton                         wifiP2pAcceptButton    = null;
 		public ImageButton                         wifiP2pRefreshButton   = null;
-		
-		public              Button                         moveAnotherActivity   = null;
-		
+		public Button                              moveAnotherActivity    = null;
 		public Spinner                             bluetoothSpinner       = null;
 		public Spinner                             wifiP2pSpinner         = null;
 		public TwoLineArrayAdapter                 bluetoothArrayAdapter  = null;

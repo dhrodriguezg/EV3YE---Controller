@@ -37,6 +37,7 @@ import ca.ualberta.ev3ye.controller.comm.ClientTCP;
 import ca.ualberta.ev3ye.controller.comm.logic.control.ControlHandler.ControlEventCallbacks;
 import ca.ualberta.ev3ye.controller.comm.logic.control.ControlSystem;
 import ca.ualberta.ev3ye.controller.comm.logic.control.GamepadControlHandler;
+import ca.ualberta.ev3ye.controller.comm.logic.control.TiltControlHandler;
 
 public class ControllerActivity extends Activity implements LoaderCallbackInterface, ControlEventCallbacks{
 	
@@ -108,7 +109,7 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
     	clientTCP = new ClientTCP(intent.getStringExtra("CameraIP"), true);
         super.onCreate(savedInstanceState);
         
-        controls = new ControlSystem( new GamepadControlHandler(this));
+        controls = new ControlSystem( new GamepadControlHandler(this) );
         
         //TODO delete this when manual operation is working...
         /*
@@ -227,9 +228,9 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
                 	if(textureByteArray==null)
                         continue;
                 	
-                	rightPower = 0;
-                	leftPower = 0;
-                	operator = 1;
+                	//rightPower = 0;
+                	//leftPower = 0;
+                	//operator = 1;
                 	
                 	if(showVisualServoing){
                 		//Load the image using OCV
@@ -329,18 +330,25 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
 	public void onHandlerSetupFailure(String msg)
 	{
 		Toast.makeText(this, "The controler setup failed: " + msg, Toast.LENGTH_LONG).show();
+		Log.e("Control", "The device could not set up a control handler: " + msg);
 	}
 
 	@Override
 	public void onHandlerStateChanged(String msg, int ID, boolean OK)
 	{
 		Toast.makeText(this, "The controller hardware state changed: " + msg, Toast.LENGTH_LONG).show();
+		Log.i("Control", "The controller hardware state changed: " + msg);
 	}
 
 	@Override
-	public void onControlEventResult(int leftMotor, int rightMotor)
+	public void onControlEventResult(int leftMotor, int rightMotor, int deltaCamera)
 	{
 		leftPower = leftMotor;
 		rightPower = rightMotor;
+		cameraHeight += deltaCamera;
+		if (cameraHeight < 0) cameraHeight = 0;
+		if (cameraHeight > 100) cameraHeight = 100;
+		
+		Log.d("CONTROL", "left:" + leftMotor + " right:" + rightMotor + " cam:" + cameraHeight);
 	}
 }

@@ -1,5 +1,6 @@
 package ca.ualberta.ev3ye.controller.comm.logic.control;
 
+import android.content.Context;
 import android.util.Log;
 import android.view.MotionEvent;
 
@@ -43,6 +44,10 @@ public abstract class ControlHandler
 	{
 		return false;
 	}
+	
+	/**
+	 * 
+	 */
 
 	/**
 	 * To be called when the handler is no longer needed, and should execute its code to release
@@ -93,7 +98,7 @@ public abstract class ControlHandler
 		 * @param leftMotor A formatted control string.
 		 * @param rightMotor TODO
 		 */
-		public void onControlEventResult( int leftMotor, int rightMotor );
+		public void onControlEventResult( int leftMotor, int rightMotor, int deltaCamera );
 	}
 
 	/**
@@ -124,9 +129,23 @@ public abstract class ControlHandler
 		}
 
 		@Override
-		public void onControlEventResult( int leftMotor, int rightMotor )
+		public void onControlEventResult( int leftMotor, int rightMotor, int deltaCamera )
 		{
-			Log.v( "ControlHandler", "onControlEventResult( leftMotor:" + leftMotor + " rightMotor:" + rightMotor +" )" );
+			Log.v( "ControlHandler", "onControlEventResult( leftMotor:" + leftMotor + " rightMotor:" + rightMotor + " deltaCamera:" + deltaCamera + " )" );
+		}
+	}
+	
+	public class ControlerResultData
+	{
+		public int L;
+		public int R;
+		public int C;
+		
+		public ControlerResultData(int L, int R, int C)
+		{
+			this.L = L;
+			this.R = R;
+			this.C = C;
 		}
 	}
 }
