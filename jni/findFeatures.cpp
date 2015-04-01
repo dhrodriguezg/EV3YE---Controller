@@ -11,9 +11,9 @@ using namespace std;
 using namespace cv;
 
 extern "C" {
-JNIEXPORT void JNICALL Java_ca_ualberta_ev3ye_controller_streaming_ControllerActivity_FindFeatures(JNIEnv*, jobject, jlong addrGray, jlong addrKeypoint, jlong addrDescriptor);
+JNIEXPORT void JNICALL Java_ca_ualberta_ev3ye_controller_vs_VisualServoing_FindFeatures(JNIEnv*, jobject, jlong addrGray, jlong addrKeypoint, jlong addrDescriptor);
 
-JNIEXPORT void JNICALL Java_ca_ualberta_ev3ye_controller_streaming_ControllerActivity_FindFeatures(JNIEnv*, jobject, jlong addrGray, jlong addrKeypoint, jlong addrDescriptor)
+JNIEXPORT void JNICALL Java_ca_ualberta_ev3ye_controller_vs_VisualServoing_FindFeatures(JNIEnv*, jobject, jlong addrGray, jlong addrKeypoint, jlong addrDescriptor)
 {
 
 	vector<KeyPoint>& keypoints_object = *(vector<KeyPoint>*)addrKeypoint;

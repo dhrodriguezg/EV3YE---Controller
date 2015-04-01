@@ -11,9 +11,9 @@ using namespace std;
 using namespace cv;
 
 extern "C" {
-JNIEXPORT void JNICALL Java_ca_ualberta_ev3ye_controller_streaming_ControllerActivity_MatchFeatures(JNIEnv*, jobject, jlong addrMarker, jlong addrScene, jlong addrSceRgba, jlong addrOutput, jlong addrMatch, bool degug);
+JNIEXPORT void JNICALL Java_ca_ualberta_ev3ye_controller_vs_VisualServoing_MatchFeatures(JNIEnv*, jobject, jlong addrMarker, jlong addrScene, jlong addrSceRgba, jlong addrOutput, jlong addrMatch, bool degug);
 
-JNIEXPORT void JNICALL Java_ca_ualberta_ev3ye_controller_streaming_ControllerActivity_MatchFeatures(JNIEnv*, jobject, jlong addrMarker, jlong addrScene, jlong addrSceRgba, jlong addrOutput, jlong addrMatch, bool degug) {
+JNIEXPORT void JNICALL Java_ca_ualberta_ev3ye_controller_vs_VisualServoing_MatchFeatures(JNIEnv*, jobject, jlong addrMarker, jlong addrScene, jlong addrSceRgba, jlong addrOutput, jlong addrMatch, bool degug) {
 
 	Mat& mRgb = *(Mat*) addrSceRgba; //Actually it's BGR
 	Mat& img_object = *(Mat*) addrMarker;

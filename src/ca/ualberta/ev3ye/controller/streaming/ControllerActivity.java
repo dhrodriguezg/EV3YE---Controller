@@ -5,7 +5,6 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.InputDevice;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
@@ -28,12 +27,8 @@ import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.InstallCallbackInterface;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
-import org.opencv.core.CvType;
-import org.opencv.core.Mat;
 import org.opencv.core.MatOfByte;
-import org.opencv.core.MatOfKeyPoint;
 import org.opencv.highgui.Highgui;
-import org.opencv.imgproc.Imgproc;
 
 import ca.ualberta.ev3ye.controller.R;
 import ca.ualberta.ev3ye.controller.comm.ClientTCP;
@@ -41,24 +36,21 @@ import ca.ualberta.ev3ye.controller.control.ControlSystem;
 import ca.ualberta.ev3ye.controller.control.GamepadControlHandler;
 import ca.ualberta.ev3ye.controller.control.TiltControlHandler;
 import ca.ualberta.ev3ye.controller.control.ControlHandler.ControlEventCallbacks;
+import ca.ualberta.ev3ye.controller.vs.VisualServoing;
 
 public class ControllerActivity extends Activity implements LoaderCallbackInterface, ControlEventCallbacks{
 	
 	private static final String TAG = "ControllerActivity"; 
 	private ImageView imageView;
 	private ClientTCP clientTCP;
+	private VisualServoing vs;
     
-    private Mat mMarker;
-    private MatOfKeyPoint mMarkerKP;
-    private Mat mMarkerDesc;
-    
-    private Mat mOutput;
-    private Mat mMatch;
     private boolean showVisualServoing = false;
     private final static int MAX_POWER = 70;
     
     private int operator = 1;
     private int leftPower = 0;
+	
 	private int rightPower = 0;
     private int cameraHeight = 100;
     private String reserved = "";
@@ -80,20 +72,20 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
                 System.loadLibrary("jniOCV");
                 
                 try {
-                	mOutput = new Mat();
-                    mMatch = new Mat(10,1,CvType.CV_32FC1);
-                	
 					InputStream is = getResources().openRawResource(R.raw.panel_07_jpg);
-					
-                    byte[] rawMarker = new byte[is.available()];
+					byte[] rawMarker = new byte[is.available()];
 					is.read(rawMarker);
 					MatOfByte mRawMarker = new MatOfByte(rawMarker);
-                    mMarker = Highgui.imdecode(mRawMarker, Highgui.CV_LOAD_IMAGE_GRAYSCALE);
+                    //mMarker = Highgui.imdecode(mRawMarker, Highgui.CV_LOAD_IMAGE_GRAYSCALE);
+                    
+                    vs = new VisualServoing(Highgui.imdecode(mRawMarker, Highgui.CV_LOAD_IMAGE_GRAYSCALE), MAX_POWER);
+					
+                    /*
                     mMarkerKP = new MatOfKeyPoint();
                     mMarkerDesc = new Mat();
                     FindFeatures(mMarker.getNativeObjAddr(), mMarkerKP.getNativeObjAddr(), mMarkerDesc.getNativeObjAddr());
                     
-                    Log.i(TAG, "Marker loaded successfully :D "+mMarkerKP.rows());
+                    Log.i(TAG, "Marker loaded successfully :D "+mMarkerKP.rows());*/
                                         
 				} catch (IOException e) {
 					e.printStackTrace();
@@ -118,12 +110,6 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
         
         controls = new ControlSystem( new GamepadControlHandler(this) );
         
-        //TODO delete this when manual operation is working...
-        /*
-        operator = 1;
-	    leftPower = 45;
-		rightPower = -45;
-	    */
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         setContentView(R.layout.activity_controller);
@@ -187,17 +173,29 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
 				case "Gamepad":
 					controls.setControlState(new GamepadControlHandler(ControllerActivity.this));
 					controls.init();
+					toggleButton.setVisibility(View.GONE);
+					toggleButton.setChecked(false);
+					showVisualServoing = false;
+					vs.disable();
+					operator = 1;
 					break;
 					
 				case "Tilt":
 					controls.setControlState(new TiltControlHandler(ControllerActivity.this, ControllerActivity.this));
 					controls.init();
+					toggleButton.setVisibility(View.GONE);
+					toggleButton.setChecked(false);
+					showVisualServoing = false;
+					vs.disable();
+					operator = 2;
 					break;
 					
 				case "Visual Servoing":
-					controls.setControlState(null);
 					toggleButton.setVisibility(View.VISIBLE);
-					// TODO
+					controls.setControlState(null);
+					vs.enable();
+					operator = 1; // TODO change to 4 when ready
+					
 					break;
 					
 				default:
@@ -209,7 +207,6 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
 			@Override
 			public void onNothingSelected(AdapterView<?> arg0)
 			{
-				// TODO Auto-generated method stub
 				
 			}
 		});
@@ -279,43 +276,8 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
                 	if(textureByteArray==null)
                         continue;
                 	
-                	//rightPower = 0;
-                	//leftPower = 0;
-                	//operator = 1;
-                	
-                	if(showVisualServoing){
-                		//Load the image using OCV
-                		MatOfByte mRawMarker = new MatOfByte(textureByteArray);
-                        Mat mRgba = Highgui.imdecode(mRawMarker, Highgui.CV_LOAD_IMAGE_COLOR);
-                        Mat mGray = new Mat();
-                        Imgproc.cvtColor(mRgba, mGray, Imgproc.COLOR_RGBA2GRAY, 1);
-                        
-                		
-                        /*Mat mRgba = Highgui.imdecode(mRawMarker, Highgui.CV_LOAD_IMAGE_GRAYSCALE);
-                        Mat mGray = new Mat();
-                        Imgproc.threshold(mRgba, mGray, 128, 255, Imgproc.THRESH_BINARY);*/
-                        
-                        MatchFeatures(mMarker.getNativeObjAddr(), mGray.getNativeObjAddr(), mRgba.getNativeObjAddr(), mOutput.getNativeObjAddr(), mMatch.getNativeObjAddr(), true);
-                        
-                        Mat imageMat = new Mat();
-                        if (mOutput.channels()==1)
-                        	Imgproc.cvtColor(mOutput, imageMat, Imgproc.COLOR_GRAY2BGR, 3);
-                        else
-                        	Imgproc.cvtColor(mOutput, imageMat, Imgproc.COLOR_RGBA2RGB, 3);
-                        	
-                        MatOfByte bufByte = new MatOfByte();
-                    	Highgui.imencode(".jpg", imageMat, bufByte);
-                    	
-                    	float [] corners = new float[10];
-                    	mMatch.get(0, 0,corners);
-                    	
-                    	rightPower = (int) (MAX_POWER*(1 - 2*corners[0]/mRgba.cols()));
-                    	leftPower = -rightPower;
-                    	operator = 1;
-                    	
-                    	byte[] texture = bufByte.toArray();
-                    	bitmap = BitmapFactory.decodeByteArray(texture, 0, texture.length);
-                	}else{
+                	bitmap = vs.processStreaming(textureByteArray);
+                	if(!showVisualServoing){
                 		bitmap = BitmapFactory.decodeByteArray(textureByteArray, 0, textureByteArray.length);
                 	}
                 	
@@ -413,5 +375,21 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
 		seekBar.setProgress(cameraHeight);
 		
 		Log.d("CONTROL", "left:" + leftMotor + " right:" + rightMotor + " cam:" + cameraHeight);
+	}
+	
+	public int getLeftPower() {
+		return leftPower;
+	}
+
+	public void setLeftPower(int leftPower) {
+		this.leftPower = leftPower;
+	}
+
+	public int getRightPower() {
+		return rightPower;
+	}
+
+	public void setRightPower(int rightPower) {
+		this.rightPower = rightPower;
 	}
 }
