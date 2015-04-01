@@ -63,7 +63,9 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
     private int cameraHeight = 100;
     private String reserved = "";
     
+    private SeekBar seekBar = null;
     private Spinner controlSpinner = null;
+    private ToggleButton toggleButton = null;
     
     private ControlSystem controls = null;
 	
@@ -141,7 +143,8 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
             }
         });
         
-        /*ToggleButton toggle = (ToggleButton) findViewById(R.id.tracking);
+        toggleButton = (ToggleButton) findViewById(R.id.tracking);
+        /*
         toggle.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if (isChecked) {
@@ -152,7 +155,7 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
             }
         });*/
 
-        SeekBar seekBar = (SeekBar) findViewById(R.id.seekBar);
+        seekBar = (SeekBar) findViewById(R.id.seekBar);
         seekBar.setProgress(cameraHeight);
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){
             @Override
@@ -177,10 +180,29 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
 			public void onItemSelected(AdapterView<?> arg0, View arg1,
 					int arg2, long arg3)
 			{
-				switch (arg0.getItemAtPosition(arg2).toString())
+				String ctrl = arg0.getItemAtPosition(arg2).toString();
+				toggleButton.setVisibility(View.GONE);
+				switch (ctrl)
 				{
-				case "":
+				case "Gamepad":
+					controls.setControlState(new GamepadControlHandler(ControllerActivity.this));
+					controls.init();
+					break;
+					
+				case "Tilt":
+					controls.setControlState(new TiltControlHandler(ControllerActivity.this, ControllerActivity.this));
+					controls.init();
+					break;
+					
+				case "Visual Servoing":
+					controls.setControlState(null);
+					toggleButton.setVisibility(View.VISIBLE);
+					// TODO
+					break;
+					
 				default:
+					Log.e("Control", "The spinner defaulted and did not switch control schemes for: " + ctrl);
+					controls.setControlState(null);
 				}
 			}
 
@@ -321,6 +343,16 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
     {
         super.onResume();
         OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_2_4_6, this, mOpenCVCallBack);
+        
+        controls.init();
+    }
+    
+    @Override
+    protected void onPause()
+    {
+    	super.onPause();
+    	
+    	controls.cleanup();
     }
     
     @Override
@@ -377,6 +409,8 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
 		cameraHeight += deltaCamera;
 		if (cameraHeight < 0) cameraHeight = 0;
 		if (cameraHeight > 100) cameraHeight = 100;
+		
+		seekBar.setProgress(cameraHeight);
 		
 		Log.d("CONTROL", "left:" + leftMotor + " right:" + rightMotor + " cam:" + cameraHeight);
 	}

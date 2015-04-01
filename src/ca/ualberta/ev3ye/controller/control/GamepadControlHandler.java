@@ -175,7 +175,7 @@ public class GamepadControlHandler
 			float rot = 
 					data.getAxisValue(MotionEvent.AXIS_X);
 			
-			int cam = (int) (data.getAxisValue(MotionEvent.AXIS_RZ) * 5f);
+			int cam = (int) -(data.getAxisValue(MotionEvent.AXIS_RZ) * 5f);
 			
 			float
 				motorL = (fwdBase * 100) + (rot * 50),
@@ -194,51 +194,7 @@ public class GamepadControlHandler
 		public String getName()
 		{
 			return "Forza scheme";
-		}
-		
-	}
-
-	public class HaloControlScheme
-			extends GamepadControlScheme
-	{
-		@Override
-		public ControlerResultData getControl( GamepadControlData data )
-		{
-			// Throttle is controlled with the right stick,
-			// Steering is controlled with the left.
-			float motorL;
-			float motorR;
-
-			// First, determine motor scale from the RSX component.
-			motorL = data.getAxisValue( MotionEvent.AXIS_Z );
-			motorR = data.getAxisValue( MotionEvent.AXIS_Z );
-
-			// Determine how much to scale each motor based on the LSY component.
-			// If LSY is close to 0, then we don't need to scale either component (we're going
-			// straight ahead). If it's close to 1, then we're turning right, and if it's close to
-			// -1 we're turning left.
-
-			// For now, just threshold the left stick input.
-			float steering = data.getAxisValue( MotionEvent.AXIS_X );
-			if ( Math.abs( steering ) < 0.25 )
-			{
-				steering = 0f;
-			}
-
-			if ( steering != 0 )
-			{
-				motorL = ( steering < 0 ) ? -motorL : motorL;
-				motorR = ( steering < 0 ) ? motorR : -motorR;
-			}
-
-			return new ControlerResultData((int) motorL, (int) motorR, 0);
-		}
-
-		@Override
-		public String getName()
-		{
-			return "Halo Scheme";
-		}
+		}	
 	}
 
 	@Override

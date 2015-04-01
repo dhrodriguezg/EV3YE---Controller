@@ -22,6 +22,22 @@ public class ControlSystem
 	{
 		setControlState( provider );
 	}
+	
+	public void init()
+	{
+		if (controlState != null)
+		{
+			this.controlState.init();
+		}
+	}
+	
+	public void cleanup()
+	{
+		if (controlState != null)
+		{
+			this.controlState.cleanup();
+		}	
+	}
 
 	public void setControlState( ControlHandler newState )
 	{
@@ -29,8 +45,7 @@ public class ControlSystem
 		String newName = ( newState != null ) ? newState.getName() : "null";
 		Helper.LogV( "CTRL", "Control state switching from " + oldName + " to " + newName );
 
-		if(controlState != null)
-			this.controlState.cleanup();
+		this.cleanup();
 		this.controlState = newState;
 	}
 	

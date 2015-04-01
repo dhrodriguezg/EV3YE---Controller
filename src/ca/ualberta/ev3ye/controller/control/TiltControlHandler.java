@@ -32,7 +32,6 @@ public class TiltControlHandler
 		if ( hasCorrectSensor( manager ) )
 		{
 			sensor = manager.getDefaultSensor( SENSOR_TYPE );
-			manager.registerListener( this, sensor, SensorManager.SENSOR_DELAY_GAME );
 		}
 		else
 		{
