@@ -247,7 +247,7 @@ public class MainActivity
             public void run() {
             	if(clientTCP==null){
 					System.out.println("Group exists!, creating connection");
-					clientTCP = new ClientTCP(info.groupOwnerAddress.getHostAddress(),true);
+					clientTCP = new ClientTCP(null,info.groupOwnerAddress.getHostAddress(),true);
 					boolean isCamera = clientTCP.greetServer();
 					if(isCamera){
 						viewHolder.enableNewActivity();
@@ -584,16 +584,25 @@ public class MainActivity
 				{
 					Intent myIntent = new Intent(MainActivity.this, ControllerActivity.class);
 					String ipv4 = null;
-					if(clientTCP==null){//not connected to group leader
-						WifiManager wifii= (WifiManager) getSystemService(Context.WIFI_SERVICE);
-						DhcpInfo d=wifii.getDhcpInfo();
-						ipv4 = intToIPv4(d.gateway);
-						
-					}else{
-						ipv4=clientTCP.getServerAddress();
+					try{
+						if(clientTCP==null){//not connected to group leader
+							WifiManager wifii= (WifiManager) getSystemService(Context.WIFI_SERVICE);
+							DhcpInfo d=wifii.getDhcpInfo();
+							ipv4 = intToIPv4(d.gateway);
+						}else{
+							ipv4=clientTCP.getServerAddress();
+						}
+					}catch (Exception e){
+						e.printStackTrace();
 					}
-					myIntent.putExtra("CameraIP", ipv4); //Optional parameters
-					MainActivity.this.startActivity(myIntent);
+					if(ipv4==null){
+						Toast.makeText(context, "Not connected to Camera yet", Toast.LENGTH_LONG).show();
+					}else if(ipv4.equals("0.0.0.0")){
+						Toast.makeText(context, "Not connected to Camera yet", Toast.LENGTH_LONG).show();
+					}else{
+						myIntent.putExtra("CameraIP", ipv4); //Optional parameters
+						MainActivity.this.startActivity(myIntent);
+					}
 				}
 			} );
 

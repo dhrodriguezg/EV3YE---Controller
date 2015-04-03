@@ -3,6 +3,7 @@ package ca.ualberta.ev3ye.controller.streaming;
 import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
@@ -20,15 +21,12 @@ import android.widget.ToggleButton;
 import android.graphics.BitmapFactory;
 import android.widget.SeekBar;
 
-import java.io.IOException;
 import java.io.InputStream;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.InstallCallbackInterface;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
-import org.opencv.core.MatOfByte;
-import org.opencv.highgui.Highgui;
 
 import ca.ualberta.ev3ye.controller.R;
 import ca.ualberta.ev3ye.controller.comm.ClientTCP;
@@ -60,7 +58,9 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
     private ToggleButton toggleButton = null;
     
     private ControlSystem controls = null;
-	
+    private MediaPlayer mediaControllerOffline = null;
+    private MediaPlayer mediaControllerOnline = null;
+    
 	protected BaseLoaderCallback mOpenCVCallBack = new BaseLoaderCallback(this) {
 	    @Override
 	    public void onManagerConnected(int status) {
@@ -70,8 +70,9 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
 	        	Log.i("OK", "OpenCV loaded successfully");
                 // Load native library after(!) OpenCV initialization
                 System.loadLibrary("jniOCV");
-                
+                /*
                 try {
+                	
 					InputStream is = getResources().openRawResource(R.raw.panel_07_jpg);
 					byte[] rawMarker = new byte[is.available()];
 					is.read(rawMarker);
@@ -80,16 +81,16 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
                     
                     vs = new VisualServoing(Highgui.imdecode(mRawMarker, Highgui.CV_LOAD_IMAGE_GRAYSCALE), MAX_POWER);
 					
-                    /*
+                    
                     mMarkerKP = new MatOfKeyPoint();
                     mMarkerDesc = new Mat();
                     FindFeatures(mMarker.getNativeObjAddr(), mMarkerKP.getNativeObjAddr(), mMarkerDesc.getNativeObjAddr());
                     
-                    Log.i(TAG, "Marker loaded successfully :D "+mMarkerKP.rows());*/
+                    Log.i(TAG, "Marker loaded successfully :D "+mMarkerKP.rows());
                                         
 				} catch (IOException e) {
 					e.printStackTrace();
-				}
+				}*/
 	        
 	        } break;
 	        default:
@@ -105,10 +106,13 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
     protected void onCreate(Bundle savedInstanceState) {
 
     	Intent intent = getIntent();
-    	clientTCP = new ClientTCP(intent.getStringExtra("CameraIP"), true);
         super.onCreate(savedInstanceState);
         
         controls = new ControlSystem( new GamepadControlHandler(this) );
+        mediaControllerOffline = MediaPlayer.create(getApplicationContext() , R.raw.controller_offline);
+        mediaControllerOnline = MediaPlayer.create(getApplicationContext() , R.raw.controller_online);
+        clientTCP = new ClientTCP(mediaControllerOnline, intent.getStringExtra("CameraIP"), true);
+        vs = new VisualServoing(this,MAX_POWER);
         
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -130,16 +134,6 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
         });
         
         toggleButton = (ToggleButton) findViewById(R.id.tracking);
-        /*
-        toggle.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                if (isChecked) {
-                	showVisualServoing = true;
-                } else {
-                	showVisualServoing = false;
-                }
-            }
-        });*/
 
         seekBar = (SeekBar) findViewById(R.id.seekBar);
         seekBar.setProgress(cameraHeight);
@@ -262,7 +256,7 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
         Thread thread = new Thread() {
             public void run() {
                 boolean stop=false;
-                //serverTCP.initServices(0);
+                vs.init(getResources().openRawResource(R.raw.panel_07_jpg));
                 Bitmap bitmap;
                 while(!stop){
                 	
@@ -313,8 +307,14 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
     protected void onPause()
     {
     	super.onPause();
-    	
+    	mediaControllerOffline.start();
     	controls.cleanup();
+    }
+    
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        clientTCP.shutdown();
     }
     
     @Override

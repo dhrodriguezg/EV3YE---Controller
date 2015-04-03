@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 
+import android.media.MediaPlayer;
 import android.util.Log;
 
 public class ClientTCP {
@@ -16,6 +17,7 @@ public class ClientTCP {
 	private static final int STREAMING_PORT = 8888;
 	private static final int CONTROLLER_PORT = 9999;
 	
+	private MediaPlayer mediaControllerOnline = null;
 	private boolean isDirectWIFI = false;
 	private String serverAddress=null;
 	
@@ -33,9 +35,10 @@ public class ClientTCP {
 	
 	private byte[] picture = null;
 	
-	public ClientTCP(String host, boolean isP2PiP){
+	public ClientTCP(MediaPlayer media, String host, boolean isP2PiP){
 		serverAddress = host;
 		isDirectWIFI = isP2PiP;
+		mediaControllerOnline = media;
 	}
 	
 	public boolean greetServer(){
@@ -124,6 +127,7 @@ public class ClientTCP {
 					streamingOutput = new DataOutputStream(streamingSocket.getOutputStream());
 					streamingInput = new DataInputStream(streamingSocket.getInputStream());
 					streamingSocket.setKeepAlive(true);
+					mediaControllerOnline.start();
 					Log.i(TAG, "***Client connected");
 					reconnect = false;
 				}
@@ -213,13 +217,49 @@ public class ClientTCP {
 	
 	public void shutdown(){
 		try {
+			if(streamingOutput!=null)
+				streamingOutput.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		try {
+			if(streamingInput!=null)
+				streamingInput.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		try {
+			if(controllerOutput!=null)
+				controllerOutput.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		try {
+			if(controllerInput!=null)
+				controllerInput.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		try {
 			if(streamingSocket!=null && !streamingSocket.isClosed())
 				streamingSocket.close();
 		} catch (IOException e) {
 			e.printStackTrace();
 			Log.e(TAG, "Client socket not closed properly, check port availability: "+STREAMING_PORT);
 		}
+		try {
+			if(controllerSocket!=null && !controllerSocket.isClosed())
+				controllerSocket.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+			Log.e(TAG, "Client socket not closed properly, check port availability: "+CONTROLLER_PORT);
+		}
 		streamingSocket=null;
+		controllerSocket=null;
 	}
 	
 	public String getServerAddress() {

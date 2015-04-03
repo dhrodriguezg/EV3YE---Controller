@@ -1,5 +1,8 @@
 package ca.ualberta.ev3ye.controller.vs;
 
+import java.io.IOException;
+import java.io.InputStream;
+
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfByte;
@@ -23,19 +26,37 @@ public class VisualServoing {
     private Mat mOutput;
     private Mat mMatch;
     
-    private ControllerActivity activity;
+    private ControllerActivity activity; 
     
-	public VisualServoing(Mat mMarker, int maxPower){
-		this.mMarker = mMarker;
-		this.MAX_POWER=maxPower;
+    public VisualServoing(ControllerActivity activity, int maxPower){
+    	this.activity = activity;
+    	this.MAX_POWER=maxPower;
+	}
+    
+	public boolean init(InputStream is){
+		boolean success = false;
 		
 		mMarkerKP = new MatOfKeyPoint();
         mMarkerDesc = new Mat();
         mOutput = new Mat();
+        
         mMatch = new Mat(10,1,CvType.CV_32FC1);
-        FindFeatures(mMarker.getNativeObjAddr(), mMarkerKP.getNativeObjAddr(), mMarkerDesc.getNativeObjAddr());
+        
+        try {
+        	byte[] rawMarker = new byte[is.available()];
+        	is.read(rawMarker);
+    		MatOfByte mRawMarker = new MatOfByte(rawMarker);
+    		mMarker=Highgui.imdecode(mRawMarker, Highgui.CV_LOAD_IMAGE_GRAYSCALE);
+    		
+        	FindFeatures(mMarker.getNativeObjAddr(), mMarkerKP.getNativeObjAddr(), mMarkerDesc.getNativeObjAddr());
+        	success = true;
+        	is.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+        return success;
 	}
-	
+
 	public void setActivity(ControllerActivity activity){
 		this.activity=activity;
 	}
@@ -61,7 +82,7 @@ public class VisualServoing {
         /*Mat mRgba = Highgui.imdecode(mRawMarker, Highgui.CV_LOAD_IMAGE_GRAYSCALE);
         Mat mGray = new Mat();
         Imgproc.threshold(mRgba, mGray, 128, 255, Imgproc.THRESH_BINARY);*/
-        
+        System.out.println("Col:"+mMarker.cols());
         MatchFeatures(mMarker.getNativeObjAddr(), mGray.getNativeObjAddr(), mRgba.getNativeObjAddr(), mOutput.getNativeObjAddr(), mMatch.getNativeObjAddr(), true);
         
         Mat imageMat = new Mat();
