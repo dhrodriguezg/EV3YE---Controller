@@ -256,26 +256,24 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
         Thread thread = new Thread() {
             public void run() {
                 boolean stop=false;
-                vs.init(getResources().openRawResource(R.raw.panel_07_jpg));
+                vs.init(getResources().openRawResource(R.raw.panel_07_png));
                 Bitmap bitmap;
+                clientTCP.updateStreamThread();
                 while(!stop){
-                	
+                	bitmap=null;
                 	double initime = System.currentTimeMillis();
-                	boolean success = clientTCP.updateStream();
+                	//boolean success = clientTCP.updateStream();
                 	final byte[] textureByteArray = clientTCP.getPicture();
                 	
-                	if(!success){
-                		continue;
-                	}
                 	if(textureByteArray==null)
                         continue;
                 	
-                	bitmap = vs.processStreaming(textureByteArray);
-                	if(!showVisualServoing){
+                	bitmap = vs.processStreaming(textureByteArray,showVisualServoing);
+                	
+                	if(bitmap==null){
                 		bitmap = BitmapFactory.decodeByteArray(textureByteArray, 0, textureByteArray.length);
                 	}
-                	
-					double endtime = System.currentTimeMillis();
+                	double endtime = System.currentTimeMillis();
 					Log.e("FPS",""+1000/(endtime-initime));
                     refreshView(bitmap);
                 }

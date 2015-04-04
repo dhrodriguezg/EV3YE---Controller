@@ -34,6 +34,7 @@ public class ClientTCP {
 	private boolean isTransferingController = false;
 	
 	private byte[] picture = null;
+	private byte[] buffPicture = null;
 	
 	public ClientTCP(MediaPlayer media, String host, boolean isP2PiP){
 		serverAddress = host;
@@ -115,7 +116,7 @@ public class ClientTCP {
 			reconnect=true;
 		
 		while (!requestCompleted && requestNumber++ < 100){ //100 tries
-			Log.i(TAG, "Sending Data to server...");
+			//Log.i(TAG, "Sending Data to server...");
 			try {
 				
 				if(reconnect){
@@ -138,14 +139,12 @@ public class ClientTCP {
                 //Transfering picture
                 int arrayLength = streamingInput.readInt();
                 picture = new byte[arrayLength];
-                Log.i(TAG, "Receiving: "+arrayLength);
                 streamingInput.readFully(picture);
                 //Sending ACK
                 streamingOutput.writeBoolean(true);
 				
 				//Data transfer completed
 				requestCompleted = true;				
-				Log.i(TAG, "Data sent successfully, tries: "+requestNumber);
 			} catch (IOException e) {
 				Log.e(TAG, "Sudden disconnection from the Server °O° ");
 				e.printStackTrace();
@@ -156,6 +155,66 @@ public class ClientTCP {
 		}
 		isTransferingStreaming = false;
 		return requestCompleted;
+	}
+	
+	public void updateStreamThread(){
+		Thread thread = new Thread() {
+            public void run() {
+            	boolean update=true;
+            	while(update){
+            		
+            		boolean requestCompleted = false;
+            		boolean reconnect = false;
+            		isTransferingStreaming = true;
+            		int requestNumber = 0;
+            		
+            		if(streamingSocket==null)
+            			reconnect=true;
+            		
+            		while (!requestCompleted && requestNumber++ < 100){ //100 tries
+            			picture=buffPicture;
+            			//Log.i(TAG, "Sending Data to server...");
+            			try {
+            				
+            				if(reconnect){
+            					
+            					if(streamingSocket!=null && !streamingSocket.isClosed())
+            						streamingSocket.close();
+            					Log.e(TAG, "Client disconnected, connecting to..."+serverAddress);
+            					streamingSocket = new Socket(serverAddress, STREAMING_PORT);
+            					streamingOutput = new DataOutputStream(streamingSocket.getOutputStream());
+            					streamingInput = new DataInputStream(streamingSocket.getInputStream());
+            					streamingSocket.setKeepAlive(true);
+            					mediaControllerOnline.start();
+            					Log.i(TAG, "***Client connected");
+            					reconnect = false;
+            				}
+            				
+            				while(streamingInput.available()==0){ //maybe this device is going too fast, so wait until there is new data...
+                                Thread.sleep(1);
+                            }
+                            //Transfering picture
+                            int arrayLength = streamingInput.readInt();
+                            buffPicture = new byte[arrayLength];
+                            streamingInput.readFully(buffPicture);
+                            //Sending ACK
+                            streamingOutput.writeBoolean(true);
+            				
+            				//Data transfer completed
+            				requestCompleted = true;				
+            			} catch (IOException e) {
+            				Log.e(TAG, "Sudden disconnection from the Server °O° ");
+            				e.printStackTrace();
+            				reconnect = true;
+            			} catch (InterruptedException e) {
+            				e.printStackTrace();
+            			}
+            		}
+            		isTransferingStreaming = false;
+            	}
+            }
+        };
+        thread.start();
 	}
 	
 	public boolean updateController(String msg){
@@ -172,7 +231,6 @@ public class ClientTCP {
 			reconnect=true;
 		
 		while (!requestCompleted && requestNumber++ < 100){ //100 tries
-			Log.i(TAG, "Sending Controller to server..."+msg);
 			try {
 				
 				if(reconnect){
@@ -191,17 +249,14 @@ public class ClientTCP {
 				//Sending Controls
                 controllerOutput.writeUTF(msg);
                 controllerOutput.flush();
-                Log.i(TAG, "Controller sent msg");
 				while(controllerInput.available()==0){ //maybe this device is going too fast, so wait until there is new data...
                     Thread.sleep(1);
                 }
                 //Receiving ACK
-				Log.i(TAG, "Controller reading ack");
                 controllerInput.readBoolean();
 
 				//Data transfer completed
 				requestCompleted = true;				
-				Log.i(TAG, "Controller sent successfully, tries: "+requestNumber);
 			} catch (IOException e) {
 				Log.e(TAG, "Sudden disconnection from the controller °O° ");
 				e.printStackTrace();

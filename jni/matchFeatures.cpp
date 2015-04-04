@@ -10,21 +10,38 @@
 using namespace std;
 using namespace cv;
 
-extern "C" {
-JNIEXPORT void JNICALL Java_ca_ualberta_ev3ye_controller_vs_VisualServoing_MatchFeatures(JNIEnv*, jobject, jlong addrMarker, jlong addrScene, jlong addrSceRgba, jlong addrOutput, jlong addrMatch, bool degug);
+void Mat_to_vector_KeyPoint(Mat& mat, vector<KeyPoint>& v_kp){
+    v_kp.clear();
+    for(int i=0; i<mat.rows; i++){
+        Vec<float, 7> v = mat.at< Vec<float, 7> >(i, 0);
+        KeyPoint kp(v[0], v[1], v[2], v[3], v[4], (int)v[5], (int)v[6]);
+        v_kp.push_back(kp);
+    }
+    return;
+}
 
-JNIEXPORT void JNICALL Java_ca_ualberta_ev3ye_controller_vs_VisualServoing_MatchFeatures(JNIEnv*, jobject, jlong addrMarker, jlong addrScene, jlong addrSceRgba, jlong addrOutput, jlong addrMatch, bool degug) {
+extern "C" {
+JNIEXPORT void JNICALL Java_ca_ualberta_ev3ye_controller_vs_VisualServoing_MatchFeatures(JNIEnv*, jobject, jlong addrMarker, jlong addrKeypoint, jlong addrDescriptor, jlong addrScene, jlong addrSceRgba, jlong addrOutput, jlong addrMatch, bool degug);
+
+JNIEXPORT void JNICALL Java_ca_ualberta_ev3ye_controller_vs_VisualServoing_MatchFeatures(JNIEnv*, jobject, jlong addrMarker, jlong addrKeypoint, jlong addrDescriptor, jlong addrScene, jlong addrSceRgba, jlong addrOutput, jlong addrMatch, bool degug){
 
 	Mat& mRgb = *(Mat*) addrSceRgba; //Actually it's BGR
 	Mat& img_object = *(Mat*) addrMarker;
+
+	vector<KeyPoint> keypoints_object;
+	Mat& mkeypoints_object = *(Mat*) addrKeypoint;
+	Mat& descriptors_object = *(Mat*) addrDescriptor;
+
 	Mat& img_scene = *(Mat*) addrScene;
 	Mat& img_output = *(Mat*) addrOutput;
 	Mat& mMatches = *(Mat*) addrMatch;
+
 
 	float thresholdDot = 0.5f; // from 0 to 1.    0 -> perfect square, 1 -> perfect line    >	max 30º
 	float thresholdLenght = 0.7f; //from 0 to 1.  1 -> perfect square, 0 -> rhombus			<   max 30%
 	Scalar matchColor(0, 255, 0);
 
+	Mat_to_vector_KeyPoint(mkeypoints_object,keypoints_object);
 
 	try {
 
@@ -32,17 +49,17 @@ JNIEXPORT void JNICALL Java_ca_ualberta_ev3ye_controller_vs_VisualServoing_Match
 		//-- Step 1: Detect the keypoints using SURF Detector
 		int minHessian = 10000;
 		SurfFeatureDetector detector(minHessian); //FastFeatureDetector,SurfFeatureDetector
-		vector<KeyPoint> keypoints_object, keypoints_scene;
+		vector<KeyPoint> keypoints_scene;
 
 		detector.detect(img_scene, keypoints_scene);
-		detector.detect(img_object, keypoints_object);
+		//detector.detect(img_object, keypoints_object);
 
 		//-- Step 2: Calculate descriptors (feature vectors)
 		SurfDescriptorExtractor extractor; //OrbDescriptorExtractor,SurfDescriptorExtractor
-		Mat descriptors_object, descriptors_scene;
+		Mat descriptors_scene;
 
 		extractor.compute(img_scene, keypoints_scene, descriptors_scene);
-		extractor.compute(img_object, keypoints_object, descriptors_object);
+		//extractor.compute(img_object, keypoints_object, descriptors_object);
 
 		if (descriptors_scene.empty()) {
 			mMatches.at<Vec<float, 8> >(0, 0) = Vec<float, 8>(-1.,-1.,-1.,-1.,-1.,-1.,-1.,-1.);
@@ -160,10 +177,9 @@ JNIEXPORT void JNICALL Java_ca_ualberta_ev3ye_controller_vs_VisualServoing_Match
 			line(img_output, corner_1, corner_2, matchColor, 4);
 			line(img_output, corner_2, corner_3, matchColor, 4);
 			line(img_output, corner_3, corner_0, matchColor, 4);
-
+			line(img_output, corner_0, corner_2, matchColor, 4);
+			line(img_output, corner_1, corner_3, matchColor, 4);
 		}
-
-
 	} catch (Exception &ex) {
 		mMatches.at<Vec<float, 8> >(0, 0) = Vec<float, 8>(-1.,-1.,-1.,-1.,-1.,-1.,-1.,-1.);
 		img_output = mRgb;

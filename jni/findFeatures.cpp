@@ -10,50 +10,36 @@
 using namespace std;
 using namespace cv;
 
+void vector_KeyPoint_to_Mat(vector<KeyPoint>& v_kp, Mat& mat)
+{
+    int count = v_kp.size();
+    mat.create(count, 1, CV_32FC(7));
+    for(int i=0; i<count; i++){
+        KeyPoint kp = v_kp[i];
+        mat.at< Vec<float, 7> >(i, 0) = Vec<float, 7>(kp.pt.x, kp.pt.y, kp.size, kp.angle, kp.response, kp.octave, kp.class_id);
+    }
+}
+
 extern "C" {
 JNIEXPORT void JNICALL Java_ca_ualberta_ev3ye_controller_vs_VisualServoing_FindFeatures(JNIEnv*, jobject, jlong addrGray, jlong addrKeypoint, jlong addrDescriptor);
 
 JNIEXPORT void JNICALL Java_ca_ualberta_ev3ye_controller_vs_VisualServoing_FindFeatures(JNIEnv*, jobject, jlong addrGray, jlong addrKeypoint, jlong addrDescriptor)
 {
 
-	vector<KeyPoint>& keypoints_object = *(vector<KeyPoint>*)addrKeypoint;
+	Mat& mkeypoints_object = *(Mat*)addrKeypoint;
 	Mat& mdescriptors_object = *(Mat*)addrDescriptor;
+
 	Mat& mGray  = *(Mat*)addrGray;
 
 	//-- Step 1: Detect the keypoints
 	int minHessian = 10000;
 	SurfFeatureDetector detector(minHessian);
+	vector<KeyPoint> keypoints_object;
     detector.detect(mGray, keypoints_object);
-
+    vector_KeyPoint_to_Mat(keypoints_object,mkeypoints_object);
     //-- Step 2: Calculate descriptors (feature vectors)
     SurfDescriptorExtractor extractor;
     extractor.compute( mGray, keypoints_object, mdescriptors_object );
 }
-
-
-void Mat_to_vector_KeyPoint(Mat& mat, vector<KeyPoint>& v_kp)
-{
-    v_kp.clear();
-    for(int i=0; i<mat.rows; i++)
-    {
-        Vec<float, 7> v = mat.at< Vec<float, 7> >(i, 0);
-        KeyPoint kp(v[0], v[1], v[2], v[3], v[4], (int)v[5], (int)v[6]);
-        v_kp.push_back(kp);
-    }
-    return;
-}
-
-
-void vector_KeyPoint_to_Mat(vector<KeyPoint>& v_kp, Mat& mat)
-{
-    int count = (int)v_kp.size();
-    mat.create(count, 1, CV_32FC(7));
-    for(int i=0; i<count; i++)
-    {
-        KeyPoint kp = v_kp[i];
-        mat.at< Vec<float, 7> >(i, 0) = Vec<float, 7>(kp.pt.x, kp.pt.y, kp.size, kp.angle, kp.response, (float)kp.octave, (float)kp.class_id);
-    }
-}
-
 
 }
