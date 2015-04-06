@@ -23,6 +23,9 @@ import android.graphics.BitmapFactory;
 import android.widget.SeekBar;
 
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.InstallCallbackInterface;
@@ -53,6 +56,7 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
 	
 	private int rightPower = 0;
     private int cameraHeight = 50;
+    private String secondControls = "";
     private String reserved = "";
     
     private SeekBar seekBar = null;
@@ -65,6 +69,10 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
     private ControlSystem controls = null;
     private MediaPlayer mediaControllerOffline = null;
     private MediaPlayer mediaControllerOnline = null;
+    
+    private boolean firstUpdate = true;
+    private ArrayAdapter<String> resolutionAdapter=null;
+    private  List<String> resolutions = new ArrayList<String>();
     
 	protected BaseLoaderCallback mOpenCVCallBack = new BaseLoaderCallback(this) {
 	    @Override
@@ -116,7 +124,7 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
         controls = new ControlSystem( new GamepadControlHandler(this) );
         mediaControllerOffline = MediaPlayer.create(getApplicationContext() , R.raw.controller_offline);
         mediaControllerOnline = MediaPlayer.create(getApplicationContext() , R.raw.controller_online);
-        clientTCP = new ClientTCP(mediaControllerOnline, intent.getStringExtra("CameraIP"), true);
+        clientTCP = new ClientTCP(this,mediaControllerOnline, intent.getStringExtra("CameraIP"), true);
         vs = new VisualServoing(this,MAX_POWER);
         
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
@@ -205,7 +213,7 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
 					controls.setControlState(null);
 					updateSeekBar(50);
 					vs.enable();
-					operator = 1; // TODO change to 4 when ready
+					operator = 4;
 					break;
 					
 				default:
@@ -222,11 +230,7 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
 		});
         
         resolutionSpinner = (Spinner) findViewById(R.id.resolutionSpinner);
-        
-        // TODO: Populate the list of resolutions.
-        String [] resolutions = new String [] {"1920 x 1080", ""};
-        
-        ArrayAdapter<String> resolutionAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, resolutions);
+        resolutionAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, resolutions);
         resolutionAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         resolutionSpinner.setAdapter(resolutionAdapter);
         resolutionSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener()
@@ -237,7 +241,9 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
 					int arg2, long arg3)
 			{
 				String item = (String) arg0.getItemAtPosition(arg2);
-				// TODO: Do something with the resolution string EG "1920 x 1080"
+				if(!firstUpdate)
+					secondControls="5;"+item;
+				firstUpdate=false;
 			}
 
 			@Override
@@ -253,11 +259,11 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
 			{
 				if (isChecked)
 				{
-					// TODO: The light button was toggled ON.
+					secondControls="6;ON";
 				}
 				else
 				{
-					// TODO: The light button was toggled OFF.
+					secondControls="6;OFF";
 				}
 			}
 		});
@@ -291,8 +297,12 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
 						rightMotor power (-100 : 100)
 						cameraheight (0 : 100)
 						*/
-						if(operator!=4){//Only for manual operation
+						if(operator<5){//Only for manual operation
 						    String controllerInput = ":"+operator+";"+leftPower+";"+rightPower+";"+cameraHeight;
+						    if(!secondControls.equals("")){
+						    	controllerInput=":"+secondControls;
+						    	secondControls="";
+						    }
 							clientTCP.updateController(controllerInput);
 						}else{ //Automatic operation.
 							clientTCP.updateController(":"+reserved);
@@ -331,7 +341,7 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
                 		bitmap = BitmapFactory.decodeByteArray(textureByteArray, 0, textureByteArray.length);
                 	}
                 	double endtime = System.currentTimeMillis();
-					Log.e("FPS",""+1000/(endtime-initime));
+					Log.d("FPS",""+1000/(endtime-initime));
                     refreshView(bitmap);
                 }
             }
@@ -458,6 +468,21 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
 		if (height > 100) height = 100;
 		cameraHeight=height;
 		seekBar.setProgress(cameraHeight);
+	}
+	
+	public void updateResolutionList(final String[] resolutionList){
+		runOnUiThread(new Runnable() {
+            public void run() {
+            	firstUpdate = true;
+            	resolutions.addAll(Arrays.asList(resolutionList));
+        		resolutionAdapter.notifyDataSetChanged();
+        		for(int location = 0; location < resolutions.size(); location++){
+        			String res=resolutions.get(location);
+        			if(res.equals("800x450"))
+        				resolutionSpinner.setSelection(location);
+        		}
+            }
+        });
 	}
 
 }

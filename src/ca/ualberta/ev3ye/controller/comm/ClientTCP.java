@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 
+import ca.ualberta.ev3ye.controller.streaming.ControllerActivity;
 import android.media.MediaPlayer;
 import android.util.Log;
 
@@ -35,11 +36,19 @@ public class ClientTCP {
 	
 	private byte[] picture = null;
 	private byte[] buffPicture = null;
+	private String[] resolutions = null;
+	private ControllerActivity activity = null;
 	
-	public ClientTCP(MediaPlayer media, String host, boolean isP2PiP){
+	public ClientTCP(ControllerActivity act, MediaPlayer media, String host, boolean isP2PiP){
+		activity = act;
 		serverAddress = host;
 		isDirectWIFI = isP2PiP;
 		mediaControllerOnline = media;
+	}
+	
+	public ClientTCP(String host, boolean isP2PiP){
+		serverAddress = host;
+		isDirectWIFI = isP2PiP;
 	}
 	
 	public boolean greetServer(){
@@ -69,7 +78,7 @@ public class ClientTCP {
 		return isEV3Camera;
 	}
 	
-	public void connect2Steaming(){
+	private void connect2Steaming(){
 		Thread thread = new Thread() {
             public void run() {
             	try {
@@ -85,7 +94,7 @@ public class ClientTCP {
         thread.start();
 	}
 	
-	public void connect2Controller(){
+	private void connect2Controller(){
 		Thread thread = new Thread() {
             public void run() {
             	try {
@@ -127,6 +136,8 @@ public class ClientTCP {
 					streamingSocket = new Socket(serverAddress, STREAMING_PORT);
 					streamingOutput = new DataOutputStream(streamingSocket.getOutputStream());
 					streamingInput = new DataInputStream(streamingSocket.getInputStream());
+					resolutions=streamingInput.readUTF().split(":");
+					activity.updateResolutionList(resolutions);
 					streamingSocket.setKeepAlive(true);
 					mediaControllerOnline.start();
 					Log.i(TAG, "***Client connected");
@@ -184,6 +195,8 @@ public class ClientTCP {
             					streamingSocket = new Socket(serverAddress, STREAMING_PORT);
             					streamingOutput = new DataOutputStream(streamingSocket.getOutputStream());
             					streamingInput = new DataInputStream(streamingSocket.getInputStream());
+            					resolutions=streamingInput.readUTF().split(":");
+            					activity.updateResolutionList(resolutions);
             					streamingSocket.setKeepAlive(true);
             					mediaControllerOnline.start();
             					Log.i(TAG, "***Client connected");
@@ -332,6 +345,5 @@ public class ClientTCP {
 	public void setPicture(byte[] picture) {
 		this.picture = picture;
 	}
-	
 	
 }

@@ -163,7 +163,7 @@ public class MainActivity
             public void run() {
             	if(clientTCP==null){
 					System.out.println("Group exists!, creating connection");
-					clientTCP = new ClientTCP(null,info.groupOwnerAddress.getHostAddress(),true);
+					clientTCP = new ClientTCP(info.groupOwnerAddress.getHostAddress(),true);
 					boolean isCamera = clientTCP.greetServer();
 					if(isCamera){
 						viewHolder.enableNewActivity();
