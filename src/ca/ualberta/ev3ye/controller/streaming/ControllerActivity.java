@@ -67,13 +67,13 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
     private ToggleButton lightButton = null;
     
     private ControlSystem controls = null;
-    private MediaPlayer mediaControllerOffline = null;
-    private MediaPlayer mediaControllerOnline = null;
     
     private boolean firstUpdate = true;
     private ArrayAdapter<String> resolutionAdapter=null;
     private  List<String> resolutions = new ArrayList<String>();
     
+    private SoundPlayer sound = null;
+
 	protected BaseLoaderCallback mOpenCVCallBack = new BaseLoaderCallback(this) {
 	    @Override
 	    public void onManagerConnected(int status) {
@@ -122,10 +122,9 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
         super.onCreate(savedInstanceState);
         
         controls = new ControlSystem( new GamepadControlHandler(this) );
-        mediaControllerOffline = MediaPlayer.create(getApplicationContext() , R.raw.controller_offline);
-        mediaControllerOnline = MediaPlayer.create(getApplicationContext() , R.raw.controller_online);
-        clientTCP = new ClientTCP(this,mediaControllerOnline, intent.getStringExtra("CameraIP"), true);
+        clientTCP = new ClientTCP(this, intent.getStringExtra("CameraIP"), true);
         vs = new VisualServoing(this,MAX_POWER);
+        sound = new SoundPlayer(getApplicationContext());
         
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -372,7 +371,7 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
     protected void onPause()
     {
     	super.onPause();
-    	mediaControllerOffline.start();
+    	sound.controllerOffline();
     	controls.cleanup();
     }
     
@@ -436,6 +435,14 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
 		updateSeekBar(cameraHeight+deltaCamera);
 		
 		Log.d("CONTROL", "left:" + leftMotor + " right:" + rightMotor + " cam:" + cameraHeight);
+	}
+	
+	public SoundPlayer getSound() {
+		return sound;
+	}
+
+	public void setSound(SoundPlayer sound) {
+		this.sound = sound;
 	}
 	
 	public int getLeftPower() {

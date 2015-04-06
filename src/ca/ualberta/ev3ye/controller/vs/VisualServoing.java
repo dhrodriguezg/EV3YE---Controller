@@ -35,6 +35,11 @@ public class VisualServoing {
     private int minInt = 180;
     private Scalar maxColor = new Scalar(255, 255, 255);
     private Scalar minColor = new Scalar(minInt,minInt,minInt);
+    private int MAX_LOST = 20;
+    private int MAX_FOUND = 20;
+    private int lostTime = 0;
+    private int foundTime = 0;
+    
     
     public VisualServoing(ControllerActivity activity, int maxPower){
     	this.activity = activity;
@@ -124,6 +129,7 @@ public class VisualServoing {
     	int rightPower = 0;
     	int leftPower = 0;
     	if(corners[0] > 10){
+    		foundTime++;
     		float direction = (1.f - 2.f*corners[0]/(float)mRgba.cols()); //[-1 ... +1]
     		//solution 1 (just for testing)
     		//direction = direction > 0 ? 1.f : -1.f;
@@ -156,9 +162,18 @@ public class VisualServoing {
         		height=0.f;
         	}
         	activity.updateSeekBar(activity.getCameraHeight()+(int)height);
+        	if(foundTime==MAX_FOUND){
+        		lostTime=0;
+        		activity.getSound().targetFound();
+        	}
     	}else{
+    		lostTime++;
     		rightPower = lastDirection*MAX_POWER/2; //searching
         	leftPower = -lastDirection*MAX_POWER/2;
+        	if(lostTime==MAX_LOST){
+        		foundTime=0;
+        		activity.getSound().targetLost();
+        	}
     	}
     	Log.e("POWER",leftPower+"::"+rightPower);
     	activity.setRightPower(rightPower);

@@ -18,7 +18,6 @@ public class ClientTCP {
 	private static final int STREAMING_PORT = 8888;
 	private static final int CONTROLLER_PORT = 9999;
 	
-	private MediaPlayer mediaControllerOnline = null;
 	private boolean isDirectWIFI = false;
 	private String serverAddress=null;
 	
@@ -39,11 +38,10 @@ public class ClientTCP {
 	private String[] resolutions = null;
 	private ControllerActivity activity = null;
 	
-	public ClientTCP(ControllerActivity act, MediaPlayer media, String host, boolean isP2PiP){
+	public ClientTCP(ControllerActivity act, String host, boolean isP2PiP){
 		activity = act;
 		serverAddress = host;
 		isDirectWIFI = isP2PiP;
-		mediaControllerOnline = media;
 	}
 	
 	public ClientTCP(String host, boolean isP2PiP){
@@ -139,7 +137,7 @@ public class ClientTCP {
 					resolutions=streamingInput.readUTF().split(":");
 					activity.updateResolutionList(resolutions);
 					streamingSocket.setKeepAlive(true);
-					mediaControllerOnline.start();
+					activity.getSound().controllerOnline();
 					Log.i(TAG, "***Client connected");
 					reconnect = false;
 				}
@@ -198,7 +196,7 @@ public class ClientTCP {
             					resolutions=streamingInput.readUTF().split(":");
             					activity.updateResolutionList(resolutions);
             					streamingSocket.setKeepAlive(true);
-            					mediaControllerOnline.start();
+            					activity.getSound().controllerOnline();
             					Log.i(TAG, "***Client connected");
             					reconnect = false;
             				}
