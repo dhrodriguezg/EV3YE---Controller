@@ -12,6 +12,7 @@
 	
 	<string-array name="control_types">
 	    <item>Gamepad</item>
+	    <item>Soft Gamepad</item>
 	    <item>Tilt</item>
 	    <item>Visual Servoing</item>
 	</string-array>

@@ -1,8 +1,9 @@
 package ca.ualberta.ev3ye.controller;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import android.app.Activity;
-import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothDevice;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -14,40 +15,26 @@ import android.net.wifi.p2p.WifiP2pDevice;
 import android.net.wifi.p2p.WifiP2pDeviceList;
 import android.net.wifi.p2p.WifiP2pInfo;
 import android.net.wifi.p2p.WifiP2pManager;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.util.Pair;
-import android.view.InputDevice;
-import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.MotionEvent;
 import android.view.View;
 import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.ImageButton;
+import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.Toast;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import ca.ualberta.ev3ye.controller.R;
 import ca.ualberta.ev3ye.controller.comm.ClientTCP;
 import ca.ualberta.ev3ye.controller.comm.auxiliary.AppState;
 import ca.ualberta.ev3ye.controller.comm.auxiliary.TwoLineArrayAdapter;
 import ca.ualberta.ev3ye.controller.comm.auxiliary.WiFiP2PBroadcastReceiver;
 import ca.ualberta.ev3ye.controller.comm.logic.BluetoothCom;
+import ca.ualberta.ev3ye.controller.comm.logic.RegexValidator;
 import ca.ualberta.ev3ye.controller.streaming.ControllerActivity;
 
-/*
-* NOTE TO SELF:
-* WIFI COMMAND FORMAT:
-* 		;left_right_cam
-* 	EG:
-	* 	;100_100_100
-* */
 
 public class MainActivity
 		extends Activity
@@ -63,10 +50,7 @@ public class MainActivity
 	protected P2PDiscoveryReceiver     p2pDiscoveryReceiver  = null;
 	protected P2PPeerListReceiver      p2pPeerListReceiver   = null;
 	protected P2PConnectionReceiver    p2pConnectionReceiver = null;
-	protected GamePadHandler           gamePad               = null;
 	
-	private static final boolean isWiFiDirect = false;
-	public Context context = null;
 	boolean goodConnection = false;
 	private ClientTCP clientTCP = null;
 
@@ -79,55 +63,16 @@ public class MainActivity
 
 		viewHolder = new ViewHolder();
 		viewHolder.init();
-		context = this;
-		if(isWiFiDirect)
-			initWiFiP2p();
-
-		checkForJoystick();
-	}
-
-	private void checkForJoystick()
-	{
-		ArrayList< Integer > gameControllerDeviceIds = new ArrayList<>();
-		int[] deviceIds = InputDevice.getDeviceIds();
-		for ( int deviceId : deviceIds )
-		{
-			InputDevice dev = InputDevice.getDevice( deviceId );
-			int sources = dev.getSources();
-
-			// Verify that the device has gamepad buttons, control sticks, or both.
-			if ( ( ( sources & InputDevice.SOURCE_GAMEPAD ) == InputDevice.SOURCE_GAMEPAD ) && ( ( sources & InputDevice.SOURCE_JOYSTICK ) == InputDevice.SOURCE_JOYSTICK ) )
-			{
-				// This device is a game controller. Store its device ID.
-				if ( !gameControllerDeviceIds.contains( deviceId ) )
-				{
-					gameControllerDeviceIds.add( deviceId );
-				}
-			}
-		}
-
-		Log.v( AppState.LOG_TAG,
-			   "[JOYS] > Device has " + gameControllerDeviceIds + " game controllers." );
-
-		if ( gameControllerDeviceIds.size() > 0 )
-		{
-			int deviceId = gameControllerDeviceIds.get( 0 );
-
-			Log.v( AppState.LOG_TAG, "[JOYS] > Using device ID " + deviceId + " as gamepad." );
-			gamePad = new GamePadHandler( deviceId );
-		}
+		
+		initWiFiP2p();
 	}
 
 	@Override
 	protected void onResume()
 	{
 		super.onResume();
-		if(isWiFiDirect){
-			this.registerReceiver( p2pBroadcastReceiver, p2pIntentFilter );
-			viewHolder.wifiP2pRefreshButton.callOnClick();
-		}
-		//viewHolder.bluetoothRefreshButton.callOnClick();
 		
+		this.registerReceiver( p2pBroadcastReceiver, p2pIntentFilter );
 	}
 
 	@Override
@@ -146,8 +91,7 @@ public class MainActivity
 	protected void onPause()
 	{
 		super.onPause();
-		if(isWiFiDirect)
-			this.unregisterReceiver( p2pBroadcastReceiver );
+		this.unregisterReceiver( p2pBroadcastReceiver );
 	}
 
 	@Override
@@ -155,34 +99,6 @@ public class MainActivity
 	{
 		Log.v( AppState.LOG_TAG, "[INFO] > ----- MainActivity onDestroy() -----" );
 		super.onDestroy();
-	}
-
-	@Override
-	public boolean onKeyDown( int keyCode, KeyEvent event )
-	{
-		if ( ( event.getSource() & InputDevice.SOURCE_GAMEPAD ) == InputDevice.SOURCE_GAMEPAD )
-		{
-			gamePad.handleEventAuto( keyCode, event );
-			return true;
-		}
-		else
-		{
-			return super.onKeyDown( keyCode, event );
-		}
-	}
-
-	@Override
-	public boolean onGenericMotionEvent( MotionEvent event )
-	{
-		if ( ( event.getSource() & InputDevice.SOURCE_JOYSTICK ) == InputDevice.SOURCE_JOYSTICK && event.getAction() == MotionEvent.ACTION_MOVE && gamePad != null )
-		{
-			gamePad.handleEventAuto( event );
-			return true;
-		}
-		else
-		{
-			return super.onGenericMotionEvent( event );
-		}
 	}
 
 	@Override
@@ -348,10 +264,10 @@ public class MainActivity
 					@Override
 					public void onConnectionInfoAvailable(WifiP2pInfo info) {
 						if(info.groupFormed){
-							Toast.makeText(context, "Leader found!", Toast.LENGTH_LONG).show();
+							Toast.makeText(MainActivity.this, "Leader found!", Toast.LENGTH_LONG).show();
 							connectToLeader(info);
 						}else{
-							Toast.makeText(context, "NO leader found :(", Toast.LENGTH_SHORT).show();
+							Toast.makeText(MainActivity.this, "NO leader found :(", Toast.LENGTH_SHORT).show();
 							System.out.println("Group not formed yet :(");
 						}
 					}
@@ -369,119 +285,43 @@ public class MainActivity
 		}
 	}
 
-	protected class GamePadHandler
-	{
-		public volatile GamepadData             latestData      = null;
-		protected       InputDevice             inputDevice     = null;
-		protected       InputDevice.MotionRange lsX_motionRange = null;
-		protected       InputDevice.MotionRange lsY_motionRange = null;
-		protected       InputDevice.MotionRange rsX_motionRange = null;
-		protected       InputDevice.MotionRange rsY_motionRange = null;
-		protected       InputDevice.MotionRange lt_motionRange  = null;
-		protected       InputDevice.MotionRange rt_motionRange  = null;
-
-		public GamePadHandler( int deviceId )
-		{
-			inputDevice = InputDevice.getDevice( deviceId );
-			lsX_motionRange = inputDevice.getMotionRange( MotionEvent.AXIS_X );
-			lsY_motionRange = inputDevice.getMotionRange( MotionEvent.AXIS_Y );
-			rsX_motionRange = inputDevice.getMotionRange( MotionEvent.AXIS_Z );
-			rsY_motionRange = inputDevice.getMotionRange( MotionEvent.AXIS_RZ );
-			lt_motionRange = inputDevice.getMotionRange( MotionEvent.AXIS_LTRIGGER );
-			rt_motionRange = inputDevice.getMotionRange( MotionEvent.AXIS_RTRIGGER );
-
-			if ( lsX_motionRange != null )
-			{
-				Log.v( AppState.LOG_TAG, "[JOYS] > LSX configured." );
-				Log.v( AppState.LOG_TAG,
-					   "Range: [" + lsX_motionRange.getMax() + ", " + lsX_motionRange.getMin() + "]" );
-				Log.v( AppState.LOG_TAG, "Flat:  [" + lsX_motionRange.getFlat() + "]" );
-			}
-			if ( lsY_motionRange != null )
-			{
-				Log.v( AppState.LOG_TAG, "[JOYS] > LSY configured." );
-				Log.v( AppState.LOG_TAG,
-					   "[JOYS] >     Range: [" + lsY_motionRange.getMax() + ", " + lsY_motionRange.getMin() + "]" );
-				Log.v( AppState.LOG_TAG,
-					   "[JOYS] >     Flat:  [" + lsY_motionRange.getFlat() + "]" );
-			}
-		}
-
-		public float getLeftJoystickX( MotionEvent event )
-		{
-			return getAxisValueImpl( event, MotionEvent.AXIS_X, lsX_motionRange.getFlat() );
-		}
-
-		public float getLeftJoystickY( MotionEvent event )
-		{
-			return getAxisValueImpl( event, MotionEvent.AXIS_Y, lsY_motionRange.getFlat() );
-		}
-
-		protected float getAxisValueImpl( MotionEvent event, int axis, float flat )
-		{
-			float result = event.getAxisValue( axis );
-			return ( Math.abs( result ) < flat ) ? 0 : result;
-		}
-
-		public void handleEventAuto( MotionEvent event )
-		{
-
-		}
-
-		public void handleEventAuto( int keyCode, KeyEvent event )
-		{
-
-		}
-
-		public class GamepadData
-		{
-			public float LSX = 0;
-			public float LSY = 0;
-			public float RSX = 0;
-			public float RSY = 0;
-			public float RT  = 0;
-			public float LT  = 0;
-		}
-	}
-
 	protected class ViewHolder
 	{
-		public ImageButton                         bluetoothAcceptButton  = null;
-		public ImageButton                         bluetoothRefreshButton = null;
-		public ImageButton                         wifiP2pAcceptButton    = null;
-		public ImageButton                         wifiP2pRefreshButton   = null;
-		public Button                              moveAnotherActivity    = null;
-		public Spinner                             bluetoothSpinner       = null;
-		public Spinner                             wifiP2pSpinner         = null;
-		public TwoLineArrayAdapter                 bluetoothArrayAdapter  = null;
+		public static final String MODE_HOTSPOT = "WiFi Hotspot";
+		public static final String MODE_IP      = "IP Address";
+		public static final String MODE_P2P     = "WiFi Direct";
+		public Spinner                             modeSpinner            = null;
+		public EditText                            ipEntry                = null;
+		public Spinner                             p2pPartner             = null;
+		public Button                              goButton               = null;
+		public ArrayAdapter<String>                modesArrayAdapter      = null;
 		public TwoLineArrayAdapter                 wifiP2pArrayAdapter    = null;
-		public List< Pair< String, String > >      bluetoothDevices       = null;
-		public ArrayList< Pair< String, String > > wifiP2pDevices         = null;
+		public List<String>                        modes                  = null;
+		public List< Pair< String, String > >      wifiP2pDevices         = null;
 
 		public ViewHolder()
 		{
-			bluetoothAcceptButton = (ImageButton) findViewById( R.id.a_main_bluetooth_accept_button );
-			bluetoothRefreshButton = (ImageButton) findViewById( R.id.a_main_bluetooth_refresh_button );
-			wifiP2pAcceptButton = (ImageButton) findViewById( R.id.a_main_wifi_accept_button );
-			wifiP2pRefreshButton = (ImageButton) findViewById( R.id.a_main_wifi_refresh_button );
-			bluetoothSpinner = (Spinner) findViewById( R.id.a_main_bluetooth_spinner );
-			wifiP2pSpinner = (Spinner) findViewById( R.id.a_main_wifi_spinner );
-			moveAnotherActivity = (Button) findViewById( R.id.move_to_another_activity );
-			moveAnotherActivity.setBackgroundColor(Color.RED);
-			bluetoothDevices = new ArrayList<>();
-			bluetoothArrayAdapter = new TwoLineArrayAdapter( MainActivity.this, bluetoothDevices );
-			bluetoothArrayAdapter.setDropDownViewResource( R.layout.list_item_spinner );
-			bluetoothSpinner.setAdapter( bluetoothArrayAdapter );
+			modeSpinner = (Spinner) findViewById(R.id.main_mode_spinner);
+			ipEntry = (EditText) findViewById(R.id.main_addr_entry);
+			p2pPartner = (Spinner) findViewById(R.id.main_partner_spinner);
+			goButton = (Button) findViewById( R.id.main_go_button );
 
+			modes = new ArrayList<>();
+			modes.add( MODE_HOTSPOT );
+			modes.add( MODE_IP );
+			modes.add( MODE_P2P );
+			modesArrayAdapter = new ArrayAdapter<>(MainActivity.this, android.R.layout.simple_spinner_item, modes);
+			modeSpinner.setAdapter(modesArrayAdapter);
+			modesArrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+			
 			wifiP2pDevices = new ArrayList<>();
 			wifiP2pArrayAdapter = new TwoLineArrayAdapter( MainActivity.this, wifiP2pDevices );
 			wifiP2pArrayAdapter.setDropDownViewResource( R.layout.list_item_spinner );
-			wifiP2pSpinner.setAdapter( wifiP2pArrayAdapter );
+			p2pPartner.setAdapter(wifiP2pArrayAdapter);
 		}
 
 		public void init()
 		{
-			populateBtList();
 			populateP2pList( new WifiP2pDeviceList() );
 			setupListeners();
 		}
@@ -490,33 +330,14 @@ public class MainActivity
 	        runOnUiThread(new Runnable() {
 	            @Override
 	            public void run() {
-	            	moveAnotherActivity.setVisibility(Button.VISIBLE);;
-	            	moveAnotherActivity.setBackgroundColor(Color.GREEN);
+	            	goButton.setVisibility(Button.VISIBLE);;
+	            	goButton.setBackgroundColor(Color.GREEN);
 	            }
 	        });
 	    }
 		
 		public String intToIPv4(int i) {
 			   return ((i) & 0xFF ) + "." + ((i >> 8 ) & 0xFF) + "." +((i >> 16 ) & 0xFF) + "." +( i >> 24 & 0xFF) ;
-		}
-
-		private void populateBtList()
-		{
-			bluetoothDevices.clear();
-
-			BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
-			if ( adapter != null )
-			{
-				Log.v( AppState.LOG_TAG, "[BLUE] > Found bonded devices:" );
-				for ( BluetoothDevice device : adapter.getBondedDevices() )
-				{
-					Log.v( AppState.LOG_TAG,
-						   "[BLUE] >     " + device.getName() + " at " + device.getAddress() );
-					bluetoothDevices.add( new Pair<>( device.getName(), device.getAddress() ) );
-				}
-			}
-
-			bluetoothArrayAdapter.notifyDataSetChanged();
 		}
 
 		private void populateP2pList( WifiP2pDeviceList peers )
@@ -539,127 +360,168 @@ public class MainActivity
 		}
 
 		private void setupListeners()
-		{
-			bluetoothRefreshButton.setOnClickListener( new View.OnClickListener()
+		{			
+			modeSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener()
 			{
 				@Override
-				public void onClick( View v )
+				public void onItemSelected(AdapterView<?> arg0, View arg1,
+						int arg2, long arg3)
 				{
-					populateBtList();
-				}
-			} );
-
-			bluetoothAcceptButton.setOnClickListener( new View.OnClickListener()
-			{
-				@Override
-				public void onClick( View v )
-				{
-					AsyncTask< Void, Void, Void > task = new AsyncTask< Void, Void, Void >()
+					/* Doesn't work for some reason.
+					String item = (String) arg0.getItemAtPosition(arg2);
+					switch (item)
 					{
-						@Override
-						protected Void doInBackground( Void... params )
-						{
-							connectBT();
-							return null;
-						}
-					};
-
-					task.execute();
+					case MODE_HOTSPOT:
+						disable(ipEntry);
+						disable(p2pPartner);
+						break;
+						
+					case MODE_IP:
+						enable(ipEntry);
+						disable(p2pPartner);
+						break;
+						
+					case MODE_P2P:
+						disable(ipEntry);
+						enable(p2pPartner);
+						break;
+						
+					default:
+						
+					}//*/
 				}
-			} );
 
-			wifiP2pRefreshButton.setOnClickListener( new View.OnClickListener()
+				@Override
+				public void onNothingSelected(AdapterView<?> arg0)
+				{ }
+				
+				private void disable(View v)
+				{
+					v.setActivated(false);
+					v.setFocusable(false);
+					v.setClickable(false);
+				}
+				
+				private void enable(View v)
+				{
+					v.setActivated(true);
+					v.setFocusable(true);
+					v.setClickable(true);
+					v.requestFocus();
+				}
+			});
+			goButton.setOnClickListener( new View.OnClickListener()
 			{
 				@Override
 				public void onClick( View v )
 				{
-					p2pManager.discoverPeers( p2pChannel, p2pDiscoveryReceiver );
+					switch((String) modeSpinner.getSelectedItem())
+					{
+					case MODE_HOTSPOT:
+						hotspotConnect();
+						break;
+						
+					case MODE_IP:
+						ipConnect();
+						break;
+						
+					case MODE_P2P:
+						p2pConnect();
+						break;
+						
+					default:
+							
+					}
 				}
 			} );
+		}
+		
+		protected void hotspotConnect()
+		{
+			Intent myIntent = new Intent(MainActivity.this, ControllerActivity.class);
+			String ipv4 = null;
+			try{
+				if(clientTCP==null){//not connected to group leader
+					WifiManager wifii= (WifiManager) getSystemService(Context.WIFI_SERVICE);
+					DhcpInfo d=wifii.getDhcpInfo();
+					ipv4 = intToIPv4(d.gateway);
+				}else{
+					ipv4=clientTCP.getServerAddress();
+				}
+			}catch (Exception e){
+				e.printStackTrace();
+			}
+			if(ipv4==null){
+				Toast.makeText(MainActivity.this, "Not connected to Camera yet", Toast.LENGTH_LONG).show();
+			}else if(ipv4.equals("0.0.0.0")){
+				Toast.makeText(MainActivity.this, "Not connected to Camera yet", Toast.LENGTH_LONG).show();
+			}else{
+				myIntent.putExtra("CameraIP", ipv4); //Optional parameters
+				MainActivity.this.startActivity(myIntent);
+			}
+		}
+
+		private void ipConnect()
+		{
+			Intent myIntent = new Intent(MainActivity.this, ControllerActivity.class);
+			String ipv4 = ipEntry.getText().toString();
+			if(!isValidInet4Address(ipv4)){
+				Toast.makeText(MainActivity.this, "That is not a valid IP address!", Toast.LENGTH_LONG).show();
+			}else{
+				myIntent.putExtra("CameraIP", ipv4); //Optional parameters
+				MainActivity.this.startActivity(myIntent);
+			}
+		}
+
+		private void p2pConnect()
+		{
+			WifiP2pManager manager = (WifiP2pManager) getSystemService(WIFI_P2P_SERVICE);
 			
-			moveAnotherActivity.setOnClickListener( new View.OnClickListener() //TODO
-			{
-				@Override
-				public void onClick( View v )
-				{
-					Intent myIntent = new Intent(MainActivity.this, ControllerActivity.class);
-					String ipv4 = null;
-					try{
-						if(clientTCP==null){//not connected to group leader
-							WifiManager wifii= (WifiManager) getSystemService(Context.WIFI_SERVICE);
-							DhcpInfo d=wifii.getDhcpInfo();
-							ipv4 = intToIPv4(d.gateway);
-						}else{
-							ipv4=clientTCP.getServerAddress();
-						}
-					}catch (Exception e){
-						e.printStackTrace();
-					}
-					if(ipv4==null){
-						Toast.makeText(context, "Not connected to Camera yet", Toast.LENGTH_LONG).show();
-					}else if(ipv4.equals("0.0.0.0")){
-						Toast.makeText(context, "Not connected to Camera yet", Toast.LENGTH_LONG).show();
-					}else{
-						myIntent.putExtra("CameraIP", ipv4); //Optional parameters
-						MainActivity.this.startActivity(myIntent);
-					}
-				}
-			} );
-
-			wifiP2pAcceptButton.setOnClickListener( new View.OnClickListener()
-			{
-				@Override
-				public void onClick( View v )
-				{
-					if(wifiP2pSpinner.getSelectedItemPosition()==android.widget.AdapterView.INVALID_POSITION)
-						return;
-					String address = wifiP2pArrayAdapter.getItem( wifiP2pSpinner.getSelectedItemPosition() ).second;
-
-					p2pConfig = new WifiP2pConfig();
-					p2pConfig.deviceAddress = address;
-					p2pManager.connect( p2pChannel, p2pConfig, p2pConnectionReceiver );
-				}
-			} );
-
-			bluetoothSpinner.setOnItemSelectedListener( new AdapterView.OnItemSelectedListener()
-			{
-				@Override
-				public void onItemSelected( AdapterView< ? > parent,
-											View view,
-											int position,
-											long id )
-				{
-					Log.v( AppState.LOG_TAG,
-						   "[ UI ] > bluetoothSpinner.setOnItemSelectedListener.onItemSelected()" );
-				}
-
-				@Override
-				public void onNothingSelected( AdapterView< ? > parent )
-				{
-					Log.v( AppState.LOG_TAG,
-						   "[ UI ] > bluetoothSpinner.setOnItemSelectedListener.onNothingSelected()" );
-				}
-			} );
-
-			wifiP2pSpinner.setOnItemSelectedListener( new AdapterView.OnItemSelectedListener()
-			{
-				@Override
-				public void onItemSelected( AdapterView< ? > parent,
-											View view,
-											int position,
-											long id )
-				{
-					Log.v( AppState.LOG_TAG,
-						   "[ UI ] > wifiP2pSpinner.setOnItemSelectedListener.onItemSelected()" );
-				}
-
-				@Override
-				public void onNothingSelected( AdapterView< ? > parent )
-				{
-					Log.v( AppState.LOG_TAG,
-						   "[ UI ] > wifiP2pSpinner.setOnItemSelectedListener.onNothingSelected()" );
-				}
-			} );
+		}
+		
+		private static final String IPV4_REGEX = "^(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})$";
+		private final RegexValidator ipv4Validator = new RegexValidator(IPV4_REGEX);
+	    /**
+	     * Taken from the Apache Commons.
+	     * http://svn.apache.org/viewvc/commons/proper/validator/trunk/src/main/java/org/apache/commons/validator/routines/InetAddressValidator.java?view=markup
+	     * Validates an IPv4 address. Returns true if valid.
+		 * @param inet4Address the IPv4 address to validate
+		 * @return true if the argument contains a valid IPv4 address
+		 */
+		public boolean isValidInet4Address(String inet4Address) {
+		// verify that address conforms to generic IPv4 format
+		String[] groups = ipv4Validator.match(inet4Address);
+		
+		if (groups == null) {
+		return false;
+		}
+		
+		// verify that address subgroups are legal
+		for (int i = 0; i <= 3; i++) {
+		String ipSegment = groups[i];
+		if (ipSegment == null || ipSegment.length() == 0) {
+		return false;
+		}
+		
+		int iIpSegment = 0;
+		
+		try {
+		iIpSegment = Integer.parseInt(ipSegment);
+		} catch(NumberFormatException e) {
+		return false;
+		}
+		
+		if (iIpSegment > 255) {
+		return false;
+		}
+		
+		if (ipSegment.length() > 1 && ipSegment.startsWith("0")) {
+		return false;
+		}
+		
+		}
+		
+		return true;
 		}
 	}
 }

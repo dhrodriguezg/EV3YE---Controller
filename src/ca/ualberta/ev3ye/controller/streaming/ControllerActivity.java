@@ -32,6 +32,7 @@ import ca.ualberta.ev3ye.controller.R;
 import ca.ualberta.ev3ye.controller.comm.ClientTCP;
 import ca.ualberta.ev3ye.controller.control.ControlSystem;
 import ca.ualberta.ev3ye.controller.control.GamepadControlHandler;
+import ca.ualberta.ev3ye.controller.control.SoftJoystickControlHandler;
 import ca.ualberta.ev3ye.controller.control.TiltControlHandler;
 import ca.ualberta.ev3ye.controller.control.ControlHandler.ControlEventCallbacks;
 import ca.ualberta.ev3ye.controller.vs.VisualServoing;
@@ -152,8 +153,9 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
         });
         
         controlSpinner = (Spinner) findViewById( R.id.controlTypeSpinner );
-        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this, R.array.control_types, android.R.layout.simple_spinner_dropdown_item);
+        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this, R.array.control_types, android.R.layout.simple_spinner_item);
         controlSpinner.setAdapter(adapter);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         controlSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener()
 		{
 			@Override
@@ -174,6 +176,16 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
 					operator = 1;
 					break;
 					
+				case "Soft Gamepad":
+					controls.setControlState(new SoftJoystickControlHandler(ControllerActivity.this, null));
+					controls.init();
+					toggleButton.setVisibility(View.GONE);
+					toggleButton.setChecked(false);
+					showVisualServoing = false;
+					vs.disable();
+					operator = 2;
+					break;
+					
 				case "Tilt":
 					controls.setControlState(new TiltControlHandler(ControllerActivity.this, ControllerActivity.this));
 					controls.init();
@@ -181,7 +193,7 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
 					toggleButton.setChecked(false);
 					showVisualServoing = false;
 					vs.disable();
-					operator = 2;
+					operator = 3;
 					break;
 					
 				case "Visual Servoing":
