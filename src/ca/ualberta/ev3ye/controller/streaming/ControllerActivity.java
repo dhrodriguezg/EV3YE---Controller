@@ -44,17 +44,18 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
 	private VisualServoing vs;
     
     private boolean showVisualServoing = false;
-    private final static int MAX_POWER = 70;
+    private final static int MAX_POWER = 100;
     
     private int operator = 1;
     private int leftPower = 0;
 	
 	private int rightPower = 0;
-    private int cameraHeight = 100;
+    private int cameraHeight = 50;
     private String reserved = "";
     
     private SeekBar seekBar = null;
-    private Spinner controlSpinner = null;
+
+	private Spinner controlSpinner = null;
     private ToggleButton toggleButton = null;
     
     private ControlSystem controls = null;
@@ -187,9 +188,9 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
 				case "Visual Servoing":
 					toggleButton.setVisibility(View.VISIBLE);
 					controls.setControlState(null);
+					updateSeekBar(50);
 					vs.enable();
 					operator = 1; // TODO change to 4 when ready
-					
 					break;
 					
 				default:
@@ -366,11 +367,7 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
 	{
 		leftPower = leftMotor;
 		rightPower = rightMotor;
-		cameraHeight += deltaCamera;
-		if (cameraHeight < 0) cameraHeight = 0;
-		if (cameraHeight > 100) cameraHeight = 100;
-		
-		seekBar.setProgress(cameraHeight);
+		updateSeekBar(cameraHeight+deltaCamera);
 		
 		Log.d("CONTROL", "left:" + leftMotor + " right:" + rightMotor + " cam:" + cameraHeight);
 	}
@@ -390,4 +387,21 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
 	public void setRightPower(int rightPower) {
 		this.rightPower = rightPower;
 	}
+	
+	public int getCameraHeight() {
+		return cameraHeight;
+	}
+
+	public void setCameraHeight(int cameraHeight) {
+		
+		this.cameraHeight = cameraHeight;
+	}
+	
+	public void updateSeekBar(int height){
+		if (height < 0) height = 0;
+		if (height > 100) height = 100;
+		cameraHeight=height;
+		seekBar.setProgress(cameraHeight);
+	}
+
 }

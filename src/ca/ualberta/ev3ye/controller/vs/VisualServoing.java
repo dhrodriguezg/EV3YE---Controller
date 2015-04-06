@@ -31,6 +31,7 @@ public class VisualServoing {
     
     private ControllerActivity activity; 
     
+    private int lastDirection=1;
     private int minInt = 180;
     private Scalar maxColor = new Scalar(255, 255, 255);
     private Scalar minColor = new Scalar(minInt,minInt,minInt);
@@ -91,10 +92,16 @@ public class VisualServoing {
         //TEST 1
 		MatOfByte mRawMarker = new MatOfByte(textureByteArray);
 		Mat color = Highgui.imdecode(mRawMarker, Highgui.CV_LOAD_IMAGE_COLOR);
-		
-		Size sz = new Size(color.cols()/2,color.rows()/2); //it's ...ok
 		Mat mRgba = new Mat();
-		Imgproc.resize( color, mRgba, sz );
+		if(color.cols()>320){
+			Log.e("POWER","Resize");
+			//Size sz = new Size(color.cols()/2,color.rows()/2); //it's ...ok
+			Size sz = new Size(320,320*color.rows()/color.cols()); //keep the pic relation
+			Imgproc.resize( color, mRgba, sz );
+		}else{
+			mRgba=color;
+		}
+		
 		
 		Mat mGray = new Mat();
 		Core.inRange(mRgba, minColor, maxColor, mGray);
@@ -117,14 +124,43 @@ public class VisualServoing {
     	int rightPower = 0;
     	int leftPower = 0;
     	if(corners[0] > 10){
-    		float direction = (1.f - 2.f*corners[0]/(float)mRgba.cols());
-    		direction = direction > 0 ? 1.f : -1.f;
-    		rightPower = (int)direction*MAX_POWER/10;
-        	leftPower = -rightPower;
+    		float direction = (1.f - 2.f*corners[0]/(float)mRgba.cols()); //[-1 ... +1]
+    		//solution 1 (just for testing)
+    		//direction = direction > 0 ? 1.f : -1.f;
+    		//rightPower = (int)direction*MAX_POWER/3;
+        	//leftPower = -rightPower;
+    		
+    		
+    		//solution 2
+    		//direction*=MAX_POWER/2;
+    		//rightPower = MAX_POWER/2+(int)direction;
+        	//leftPower = MAX_POWER/2+(int)direction;
+        	
+        	//solution 3
+    		if(direction>0){
+    			lastDirection = 1;
+    			rightPower = MAX_POWER/2;
+    			leftPower = MAX_POWER/2 - (int)(1.3*direction*MAX_POWER/2); //[50 ... -50]
+    		}else{
+    			lastDirection = -1;
+    			rightPower = MAX_POWER/2 + (int)(1.3*direction*MAX_POWER/2); //[50 ... -50]
+    			leftPower = MAX_POWER/2;
+    		}
+        	
+        	float height = (1.f - 2.f*corners[1]/(float)mRgba.rows()); //[-1 ... +1]
+        	if(height > 0.2){
+        		height=1.f;
+        	}else if(height < -0.2){
+        		height=-1.f;
+        	}else{
+        		height=0.f;
+        	}
+        	activity.updateSeekBar(activity.getCameraHeight()+(int)height);
     	}else{
-    		rightPower = MAX_POWER/20; //searching
-        	leftPower = -MAX_POWER/20;
+    		rightPower = lastDirection*MAX_POWER/2; //searching
+        	leftPower = -lastDirection*MAX_POWER/2;
     	}
+    	Log.e("POWER",leftPower+"::"+rightPower);
     	activity.setRightPower(rightPower);
     	activity.setLeftPower(leftPower);
     	
