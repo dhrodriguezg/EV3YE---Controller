@@ -3,7 +3,6 @@ package ca.ualberta.ev3ye.controller.streaming;
 import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Bitmap;
-import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
@@ -215,9 +214,8 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
 					softControlView.setVisibility(View.GONE);
 					toggleButton.setVisibility(View.VISIBLE);
 					controls.setControlState(null);
-					updateSeekBar(50);
 					vs.enable();
-					operator = 4;
+					operator = 1; //5 reserved for joints...
 					break;
 					
 				default:
@@ -492,7 +490,7 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
         		resolutionAdapter.notifyDataSetChanged();
         		for(int location = 0; location < resolutions.size(); location++){
         			String res=resolutions.get(location);
-        			if(res.equals("800x450"))
+        			if(res.startsWith("800x"))
         				resolutionSpinner.setSelection(location);
         		}
             }
