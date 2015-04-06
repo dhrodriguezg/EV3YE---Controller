@@ -42,8 +42,6 @@ public class SoftJoystickControlHandler
 					int [] viewCenter = new int [] {arg0.getWidth() / 2, arg0.getHeight() / 2};
 					float [] touch = new float [] {arg1.getX(), arg1.getY()};
 					
-					Log.v(AppState.LOG_TAG, String.format("Touch %+5f, %+5f   Center %3d, %3d", touch[0], touch[1], viewCenter[0], viewCenter[1]));
-					
 					calculateMotorValues(touch, viewCenter);
 				}
 				return true;
@@ -59,8 +57,8 @@ public class SoftJoystickControlHandler
 		touchVector[1] /= viewCenter[1];
 		
 		// The Y component gives us throttle.
-		motorL = (int) touchVector[1] * 100;
-		motorR = (int) touchVector[1] * 100;
+		motorL = (int) (touchVector[1] * 100);
+		motorR = (int) (touchVector[1] * 100);
 		
 		// The X component gives us steering.
 		motorL -= touchVector[0] * 50;
@@ -71,6 +69,8 @@ public class SoftJoystickControlHandler
 		if(motorR > 100) motorR = 100;
 		if(motorL < -100) motorL = -100;
 		if(motorR < -100) motorR = -100;
+		
+		Log.d("Control", String.format("%+3d, %+3d", motorL, motorR));
 		
 		// Send the result.
 		callbackTarget.onControlEventResult(motorL, motorR, 0);

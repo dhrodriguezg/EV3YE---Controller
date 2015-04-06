@@ -18,15 +18,18 @@ import android.net.wifi.p2p.WifiP2pDeviceList;
 import android.net.wifi.p2p.WifiP2pInfo;
 import android.net.wifi.p2p.WifiP2pManager;
 import android.os.Bundle;
+import android.text.InputType;
 import android.util.Log;
 import android.util.Pair;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.Toast;
 import ca.ualberta.ev3ye.controller.comm.ClientTCP;
@@ -75,8 +78,13 @@ public class MainActivity
 	protected void onResume()
 	{
 		super.onResume();
-		this.registerReceiver( p2pBroadcastReceiver, p2pIntentFilter );
-		p2pManager.discoverPeers(p2pChannel, p2pDiscoveryReceiver);
+		//this.registerReceiver( p2pBroadcastReceiver, p2pIntentFilter );
+		//p2pManager.discoverPeers(p2pChannel, p2pDiscoveryReceiver);
+
+		viewHolder.ipEntry.setTextColor(Color.BLACK);
+		WifiManager wifii= (WifiManager) getSystemService(Context.WIFI_SERVICE);
+		DhcpInfo d=wifii.getDhcpInfo();
+		viewHolder.ipEntry.setText(viewHolder.intToIPv4(d.gateway));
 	}
 
 	@Override
@@ -95,7 +103,7 @@ public class MainActivity
 	protected void onPause()
 	{
 		super.onPause();
-		this.unregisterReceiver( p2pBroadcastReceiver );
+		//this.unregisterReceiver( p2pBroadcastReceiver );
 	}
 	
 	@Override
@@ -200,6 +208,7 @@ public class MainActivity
 
 	private void initWiFiP2p()
 	{
+		/*
 		p2pManager = (WifiP2pManager) getSystemService( Context.WIFI_P2P_SERVICE );
 		p2pChannel = p2pManager.initialize( this, getMainLooper(), null );
 		p2pBroadcastReceiver = new WiFiP2PBroadcastReceiver( this );
@@ -212,6 +221,7 @@ public class MainActivity
 		p2pIntentFilter.addAction( WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION );
 		p2pIntentFilter.addAction( WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION );
 		p2pIntentFilter.addAction( WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION );
+		//*/
 	}
 
 	/**
@@ -319,6 +329,8 @@ public class MainActivity
 		public Map<String, WifiP2pDevice>          deviceMap              = new HashMap<> ();
 		public List<String>                        modes                  = null;
 		public List<String>                        wifiP2pDevices         = null;
+		public LinearLayout p2playout = null;
+		public LinearLayout ipLayout = null;
 
 		public ViewHolder()
 		{
@@ -326,11 +338,15 @@ public class MainActivity
 			ipEntry = (EditText) findViewById(R.id.main_addr_entry);
 			p2pSpinner = (Spinner) findViewById(R.id.main_partner_spinner);
 			goButton = (Button) findViewById( R.id.main_go_button );
+			p2playout = (LinearLayout) findViewById(R.id.main_P2PLayout);
+			ipLayout = (LinearLayout) findViewById(R.id.main_IPLayout);
+
+			p2playout.setVisibility(View.GONE);
 
 			modes = new ArrayList<>();
 			modes.add( MODE_HOTSPOT );
 			modes.add( MODE_IP );
-			modes.add( MODE_P2P );
+			//modes.add( MODE_P2P );
 			modesArrayAdapter = new ArrayAdapter<>(MainActivity.this, android.R.layout.simple_spinner_item, modes);
 			modeSpinner.setAdapter(modesArrayAdapter);
 			modesArrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
@@ -389,23 +405,26 @@ public class MainActivity
 				public void onItemSelected(AdapterView<?> arg0, View arg1,
 						int arg2, long arg3)
 				{
-					/* Doesn't work for some reason.
+					//*
 					String item = (String) arg0.getItemAtPosition(arg2);
 					switch (item)
 					{
 					case MODE_HOTSPOT:
-						disable(ipEntry);
-						disable(p2pPartner);
+						disableIPLayout();
+						p2playout.setVisibility(View.GONE);
+						WifiManager wifii= (WifiManager) getSystemService(Context.WIFI_SERVICE);
+						DhcpInfo d=wifii.getDhcpInfo();
+						ipEntry.setText(intToIPv4(d.gateway));
 						break;
 						
 					case MODE_IP:
-						enable(ipEntry);
-						disable(p2pPartner);
+						enableIPLayout();
+						p2playout.setVisibility(View.GONE);
 						break;
 						
 					case MODE_P2P:
-						disable(ipEntry);
-						enable(p2pPartner);
+						disableIPLayout();
+						p2playout.setVisibility(View.VISIBLE);
 						break;
 						
 					default:
@@ -413,24 +432,31 @@ public class MainActivity
 					}//*/
 				}
 
+				private void disableIPLayout()
+				{
+					ipEntry.setTextColor(Color.GRAY);
+					/*
+					ipEntry.setEnabled(false);
+					ipEntry.setFocusable(false);
+					ipEntry.setClickable(false);
+					ipEntry.clearFocus();//*/
+				}
+				
+				private void enableIPLayout()
+				{
+					ipEntry.setTextColor(Color.BLACK);
+					/*
+					ipEntry.setEnabled(true);
+					ipEntry.setFocusable(true);
+					ipEntry.setClickable(true);
+					ipEntry.requestFocus();	
+				    ipEntry.setInputType(InputType.TYPE_CLASS_TEXT);
+				    ((InputMethodManager)MainActivity.this.getSystemService(INPUT_METHOD_SERVICE)).showSoftInput(ipEntry, 0);//*/
+				}
+
 				@Override
 				public void onNothingSelected(AdapterView<?> arg0)
 				{ }
-				
-				private void disable(View v)
-				{
-					v.setActivated(false);
-					v.setFocusable(false);
-					v.setClickable(false);
-				}
-				
-				private void enable(View v)
-				{
-					v.setActivated(true);
-					v.setFocusable(true);
-					v.setClickable(true);
-					v.requestFocus();
-				}
 			});
 			
 			p2pSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener()
