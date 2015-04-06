@@ -52,7 +52,6 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
     
     private int operator = 1;
     private int leftPower = 0;
-	
 	private int rightPower = 0;
     private int cameraHeight = 50;
     private String secondControls = "";
@@ -83,28 +82,6 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
 	        	Log.i("OK", "OpenCV loaded successfully");
                 // Load native library after(!) OpenCV initialization
                 System.loadLibrary("jniOCV");
-                /*
-                try {
-                	
-					InputStream is = getResources().openRawResource(R.raw.panel_07_jpg);
-					byte[] rawMarker = new byte[is.available()];
-					is.read(rawMarker);
-					MatOfByte mRawMarker = new MatOfByte(rawMarker);
-                    //mMarker = Highgui.imdecode(mRawMarker, Highgui.CV_LOAD_IMAGE_GRAYSCALE);
-                    
-                    vs = new VisualServoing(Highgui.imdecode(mRawMarker, Highgui.CV_LOAD_IMAGE_GRAYSCALE), MAX_POWER);
-					
-                    
-                    mMarkerKP = new MatOfKeyPoint();
-                    mMarkerDesc = new Mat();
-                    FindFeatures(mMarker.getNativeObjAddr(), mMarkerKP.getNativeObjAddr(), mMarkerDesc.getNativeObjAddr());
-                    
-                    Log.i(TAG, "Marker loaded successfully :D "+mMarkerKP.rows());
-                                        
-				} catch (IOException e) {
-					e.printStackTrace();
-				}*/
-	        
 	        } break;
 	        default:
 	        {
@@ -186,6 +163,8 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
 					showVisualServoing = false;
 					vs.disable();
 					operator = 1;
+					leftPower = 0;
+					rightPower = 0;
 					break;
 					
 				case "Soft Gamepad":
@@ -197,6 +176,8 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
 					showVisualServoing = false;
 					vs.disable();
 					operator = 2;
+					leftPower = 0;
+					rightPower = 0;
 					break;
 					
 				case "Tilt":
@@ -208,6 +189,8 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
 					showVisualServoing = false;
 					vs.disable();
 					operator = 3;
+					leftPower = 0;
+					rightPower = 0;
 					break;
 					
 				case "Visual Servoing":
@@ -216,6 +199,8 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
 					controls.setControlState(null);
 					vs.enable();
 					operator = 1; //5 reserved for joints...
+					leftPower = 0;
+					rightPower = 0;
 					break;
 					
 				default:
@@ -493,6 +478,16 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
         			if(res.startsWith("800x"))
         				resolutionSpinner.setSelection(location);
         		}
+            }
+        });
+	}
+	
+	public void changeInterface(final int option){
+		runOnUiThread(new Runnable() {
+            public void run() {
+            	controlSpinner.setSelection(option);
+            	leftPower = 0;
+				rightPower = 0;
             }
         });
 	}

@@ -131,23 +131,16 @@ public class VisualServoing {
     	if(corners[0] > 10){
     		foundTime++;
     		float direction = (1.f - 2.f*corners[0]/(float)mRgba.cols()); //[-1 ... +1]
-    		//solution 1 (just for testing)
-    		//direction = direction > 0 ? 1.f : -1.f;
-    		//rightPower = (int)direction*MAX_POWER/3;
-        	//leftPower = -rightPower;
     		
-    		
-    		//solution 2
-    		//direction*=MAX_POWER/2;
-    		//rightPower = MAX_POWER/2+(int)direction;
-        	//leftPower = MAX_POWER/2+(int)direction;
-        	
-        	//solution 3
     		if(direction>0){
+    			if (direction<0.1)
+    				direction=0.f;
     			lastDirection = 1;
     			rightPower = MAX_POWER/2;
     			leftPower = MAX_POWER/2 - (int)(1.3*direction*MAX_POWER/2); //[50 ... -50]
     		}else{
+    			if (direction>-0.1)
+    				direction=0.f;
     			lastDirection = -1;
     			rightPower = MAX_POWER/2 + (int)(1.3*direction*MAX_POWER/2); //[50 ... -50]
     			leftPower = MAX_POWER/2;
@@ -166,10 +159,19 @@ public class VisualServoing {
         		lostTime=0;
         		activity.getSound().targetFound();
         	}
+        	float hight = corners[5]-corners[7];
+        	hight = hight > 0 ? hight : -hight;
+        	if(hight > mRgba.rows()){//task finished
+        		activity.getSound().taskFinished();
+        		activity.changeInterface(0);
+        		rightPower=0;
+        		leftPower=0;
+        		enable=false;
+        	}
     	}else{
     		lostTime++;
-    		rightPower = lastDirection*MAX_POWER/2; //searching
-        	leftPower = -lastDirection*MAX_POWER/2;
+    		rightPower = lastDirection*MAX_POWER*2/5; //searching
+        	leftPower = -lastDirection*MAX_POWER*2/5;
         	if(lostTime==MAX_LOST){
         		foundTime=0;
         		activity.getSound().targetLost();

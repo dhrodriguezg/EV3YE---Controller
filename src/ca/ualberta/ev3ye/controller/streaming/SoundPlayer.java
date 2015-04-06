@@ -10,6 +10,7 @@ public class SoundPlayer {
 	private MediaPlayer mediaControllerOnline = null;
 	private MediaPlayer mediaTargetLost = null;
 	private MediaPlayer mediaTargetFound = null;
+	private MediaPlayer mediaTaskFinished = null;
 	
 	public SoundPlayer(Context context){
 		
@@ -17,6 +18,7 @@ public class SoundPlayer {
 		mediaControllerOnline = MediaPlayer.create(context , R.raw.controller_online);
 		mediaTargetLost = MediaPlayer.create(context , R.raw.target_lost);
 		mediaTargetFound = MediaPlayer.create(context , R.raw.target_found);
+		mediaTaskFinished = MediaPlayer.create(context , R.raw.task_finished);
 	}
 	
 	public void controllerOnline(){
@@ -33,5 +35,9 @@ public class SoundPlayer {
 	
 	public void targetFound(){
 		mediaTargetFound.start();
+	}
+	
+	public void taskFinished(){
+		mediaTaskFinished.start();
 	}
 }
