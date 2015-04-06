@@ -65,5 +65,14 @@
         android:onClick="onToggleClicked"
         android:textOff="Hide Tracking"
         android:textOn="Show Tracking" />
+    
+    <View 
+        android:id="@+id/softControlView"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:background="#40ffffff"
+        android:layout_centerVertical="true"
+        android:layout_alignParentLeft="true"
+        android:layout_margin="64dp"/>
 
 </RelativeLayout>

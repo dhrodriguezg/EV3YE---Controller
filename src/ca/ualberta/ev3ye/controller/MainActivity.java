@@ -244,7 +244,7 @@ public class MainActivity
 		@Override
 		public void onPeersAvailable( WifiP2pDeviceList peers )
 		{
-			Log.v( AppState.LOG_TAG, "[WIFI] > P2P peers available." );
+			Log.v( AppState.LOG_TAG, "[WIFI] > P2P peers available: " + peers.getDeviceList().size() );
 			viewHolder.populateP2pList( peers );
 		}
 	}
@@ -337,7 +337,7 @@ public class MainActivity
 			
 			wifiP2pDevices = new ArrayList<>();
 			wifiP2pArrayAdapter = new ArrayAdapter<>(MainActivity.this, android.R.layout.simple_spinner_item, wifiP2pDevices);
-			wifiP2pArrayAdapter.setDropDownViewResource( R.layout.list_item_spinner );
+			wifiP2pArrayAdapter.setDropDownViewResource( android.R.layout.simple_spinner_dropdown_item );
 			p2pSpinner.setAdapter(wifiP2pArrayAdapter);
 		}
 
@@ -512,13 +512,16 @@ public class MainActivity
 
 		private void p2pConnect()
 		{
-			String device = (String) p2pSpinner.getSelectedItem();
-			if(device == null || device.isEmpty())
+			String arg = (String) p2pSpinner.getSelectedItem();
+			if(arg == null || arg.isEmpty())
 			{
 				Toast.makeText(MainActivity.this, "You haven't selected a WiFi Direct device to connect to!", Toast.LENGTH_LONG).show();
+				return;
 			}
 			
-			Intent myIntent = new Intent(MainActivity.this, ControllerActivity.class);
+			WifiP2pDevice device = deviceMap.get(arg);
+			
+			p2pManager.connect(p2pChannel, p2pConfig, p2pConnectionReceiver);
 		}
 		
 		private static final String IPV4_REGEX = "^(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})$";

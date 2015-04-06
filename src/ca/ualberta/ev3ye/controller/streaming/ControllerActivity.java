@@ -234,7 +234,7 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
 		});
         
         resolutionSpinner = (Spinner) findViewById(R.id.resolutionSpinner);
-        resolutionAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, resolutions);
+        resolutionAdapter = new ArrayAdapter<>(this,android.R.layout.simple_spinner_item, resolutions);
         resolutionAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         resolutionSpinner.setAdapter(resolutionAdapter);
         resolutionSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener()
