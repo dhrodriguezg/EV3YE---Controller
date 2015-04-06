@@ -1,7 +1,9 @@
 package ca.ualberta.ev3ye.controller;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import android.app.Activity;
 import android.content.Context;
@@ -31,6 +33,7 @@ import ca.ualberta.ev3ye.controller.comm.ClientTCP;
 import ca.ualberta.ev3ye.controller.comm.auxiliary.AppState;
 import ca.ualberta.ev3ye.controller.comm.auxiliary.TwoLineArrayAdapter;
 import ca.ualberta.ev3ye.controller.comm.auxiliary.WiFiP2PBroadcastReceiver;
+import ca.ualberta.ev3ye.controller.comm.auxiliary.WiFiP2PBroadcastReceiver.WiFiP2PBroadcastCallbacks;
 import ca.ualberta.ev3ye.controller.comm.logic.BluetoothCom;
 import ca.ualberta.ev3ye.controller.comm.logic.RegexValidator;
 import ca.ualberta.ev3ye.controller.streaming.ControllerActivity;
@@ -50,6 +53,7 @@ public class MainActivity
 	protected P2PDiscoveryReceiver     p2pDiscoveryReceiver  = null;
 	protected P2PPeerListReceiver      p2pPeerListReceiver   = null;
 	protected P2PConnectionReceiver    p2pConnectionReceiver = null;
+	protected P2PInfoReceiver          p2pInfoReciever       = null;
 	
 	boolean goodConnection = false;
 	private ClientTCP clientTCP = null;
@@ -71,8 +75,8 @@ public class MainActivity
 	protected void onResume()
 	{
 		super.onResume();
-		
 		this.registerReceiver( p2pBroadcastReceiver, p2pIntentFilter );
+		p2pManager.discoverPeers(p2pChannel, p2pDiscoveryReceiver);
 	}
 
 	@Override
@@ -92,6 +96,18 @@ public class MainActivity
 	{
 		super.onPause();
 		this.unregisterReceiver( p2pBroadcastReceiver );
+	}
+	
+	@Override
+	protected void onStop()
+	{
+		super.onStop();
+		stopWiFiP2p();
+	}
+
+	private void stopWiFiP2p()
+	{
+		
 	}
 
 	@Override
@@ -182,23 +198,6 @@ public class MainActivity
 		Log.v( AppState.LOG_TAG, "[WIFI] > P2P local device changed." );
 	}
 
-	public void connectBT()
-	{
-		com = new BluetoothCom();
-		com.enableBT( this );
-		if ( com.connectToNXTs() )
-		{
-			try
-			{
-				com.writeMessage( "Hello EV3" );
-			}
-			catch ( InterruptedException e )
-			{
-				e.printStackTrace();
-			}
-		}
-	}
-
 	private void initWiFiP2p()
 	{
 		p2pManager = (WifiP2pManager) getSystemService( Context.WIFI_P2P_SERVICE );
@@ -226,6 +225,7 @@ public class MainActivity
 		public void onSuccess()
 		{
 			Log.v( AppState.LOG_TAG, "[WIFI] > P2P discovery success." );
+			p2pManager.requestPeers(p2pChannel, p2pPeerListReceiver);
 		}
 
 		@Override
@@ -285,6 +285,26 @@ public class MainActivity
 		}
 	}
 
+	/**
+	 *
+	 */
+	protected class P2PInfoReceiver
+		implements WifiP2pManager.ConnectionInfoListener
+	{
+		@Override
+		public void onConnectionInfoAvailable(WifiP2pInfo info)
+		{
+			if (!info.groupFormed)
+			{
+				Log.e(AppState.LOG_TAG, "[WIFI] > P2P group not formed");
+			}
+			
+			Log.d(AppState.LOG_TAG, "[WIFI] > Group formed:");
+			Log.d(AppState.LOG_TAG, "[WIFI] >     isGroupOwner:" + info.isGroupOwner);
+			Log.d(AppState.LOG_TAG, "[WIFI] >     groupOwnerAddress:" + info.groupOwnerAddress);
+		}	
+	}
+	
 	protected class ViewHolder
 	{
 		public static final String MODE_HOTSPOT = "WiFi Hotspot";
@@ -292,18 +312,19 @@ public class MainActivity
 		public static final String MODE_P2P     = "WiFi Direct";
 		public Spinner                             modeSpinner            = null;
 		public EditText                            ipEntry                = null;
-		public Spinner                             p2pPartner             = null;
+		public Spinner                             p2pSpinner             = null;
 		public Button                              goButton               = null;
 		public ArrayAdapter<String>                modesArrayAdapter      = null;
-		public TwoLineArrayAdapter                 wifiP2pArrayAdapter    = null;
+		public ArrayAdapter<String>                wifiP2pArrayAdapter    = null;
+		public Map<String, WifiP2pDevice>          deviceMap              = new HashMap<> ();
 		public List<String>                        modes                  = null;
-		public List< Pair< String, String > >      wifiP2pDevices         = null;
+		public List<String>                        wifiP2pDevices         = null;
 
 		public ViewHolder()
 		{
 			modeSpinner = (Spinner) findViewById(R.id.main_mode_spinner);
 			ipEntry = (EditText) findViewById(R.id.main_addr_entry);
-			p2pPartner = (Spinner) findViewById(R.id.main_partner_spinner);
+			p2pSpinner = (Spinner) findViewById(R.id.main_partner_spinner);
 			goButton = (Button) findViewById( R.id.main_go_button );
 
 			modes = new ArrayList<>();
@@ -315,14 +336,13 @@ public class MainActivity
 			modesArrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
 			
 			wifiP2pDevices = new ArrayList<>();
-			wifiP2pArrayAdapter = new TwoLineArrayAdapter( MainActivity.this, wifiP2pDevices );
+			wifiP2pArrayAdapter = new ArrayAdapter<>(MainActivity.this, android.R.layout.simple_spinner_item, wifiP2pDevices);
 			wifiP2pArrayAdapter.setDropDownViewResource( R.layout.list_item_spinner );
-			p2pPartner.setAdapter(wifiP2pArrayAdapter);
+			p2pSpinner.setAdapter(wifiP2pArrayAdapter);
 		}
 
 		public void init()
 		{
-			populateP2pList( new WifiP2pDeviceList() );
 			setupListeners();
 		}
 		
@@ -343,6 +363,7 @@ public class MainActivity
 		private void populateP2pList( WifiP2pDeviceList peers )
 		{
 			wifiP2pDevices.clear();
+			deviceMap.clear();
 
 			if ( !peers.getDeviceList().isEmpty() )
 			{
@@ -353,7 +374,8 @@ public class MainActivity
 			{
 				Log.v( AppState.LOG_TAG,
 					   "[WIFI] >     " + device.deviceName + " at " + device.deviceAddress );
-				wifiP2pDevices.add( new Pair<>( device.deviceName, device.deviceAddress ) );
+				wifiP2pDevices.add( device.deviceName );
+				deviceMap.put(device.deviceName, device);
 			}
 
 			wifiP2pArrayAdapter.notifyDataSetChanged();
@@ -410,6 +432,21 @@ public class MainActivity
 					v.requestFocus();
 				}
 			});
+			
+			p2pSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener()
+			{
+				@Override
+				public void onItemSelected(AdapterView<?> arg0, View arg1,
+						int arg2, long arg3)
+				{
+					
+				}
+
+				@Override
+				public void onNothingSelected(AdapterView<?> arg0)
+				{ }
+			});
+			
 			goButton.setOnClickListener( new View.OnClickListener()
 			{
 				@Override
@@ -475,14 +512,19 @@ public class MainActivity
 
 		private void p2pConnect()
 		{
-			WifiP2pManager manager = (WifiP2pManager) getSystemService(WIFI_P2P_SERVICE);
+			String device = (String) p2pSpinner.getSelectedItem();
+			if(device == null || device.isEmpty())
+			{
+				Toast.makeText(MainActivity.this, "You haven't selected a WiFi Direct device to connect to!", Toast.LENGTH_LONG).show();
+			}
 			
+			Intent myIntent = new Intent(MainActivity.this, ControllerActivity.class);
 		}
 		
 		private static final String IPV4_REGEX = "^(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})$";
 		private final RegexValidator ipv4Validator = new RegexValidator(IPV4_REGEX);
 	    /**
-	     * Taken from the Apache Commons.
+	     * Taken from the Apache Commons. Licensed under the Apache License version 2.
 	     * http://svn.apache.org/viewvc/commons/proper/validator/trunk/src/main/java/org/apache/commons/validator/routines/InetAddressValidator.java?view=markup
 	     * Validates an IPv4 address. Returns true if valid.
 		 * @param inet4Address the IPv4 address to validate

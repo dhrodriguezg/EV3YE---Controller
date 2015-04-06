@@ -61,6 +61,7 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
 	private Spinner resolutionSpinner = null;
     private ToggleButton toggleButton = null;
     private ToggleButton lightButton = null;
+    private View softControlView = null;
     
     private ControlSystem controls = null;
     private MediaPlayer mediaControllerOffline = null;
@@ -173,6 +174,7 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
 				case "Gamepad":
 					controls.setControlState(new GamepadControlHandler(ControllerActivity.this));
 					controls.init();
+					softControlView.setVisibility(View.GONE);
 					toggleButton.setVisibility(View.GONE);
 					toggleButton.setChecked(false);
 					showVisualServoing = false;
@@ -181,8 +183,9 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
 					break;
 					
 				case "Soft Gamepad":
-					controls.setControlState(new SoftJoystickControlHandler(ControllerActivity.this, null));
+					controls.setControlState(new SoftJoystickControlHandler(ControllerActivity.this, softControlView));
 					controls.init();
+					softControlView.setVisibility(View.VISIBLE);
 					toggleButton.setVisibility(View.GONE);
 					toggleButton.setChecked(false);
 					showVisualServoing = false;
@@ -193,6 +196,7 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
 				case "Tilt":
 					controls.setControlState(new TiltControlHandler(ControllerActivity.this, ControllerActivity.this));
 					controls.init();
+					softControlView.setVisibility(View.GONE);
 					toggleButton.setVisibility(View.GONE);
 					toggleButton.setChecked(false);
 					showVisualServoing = false;
@@ -201,6 +205,7 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
 					break;
 					
 				case "Visual Servoing":
+					softControlView.setVisibility(View.GONE);
 					toggleButton.setVisibility(View.VISIBLE);
 					controls.setControlState(null);
 					updateSeekBar(50);
@@ -261,6 +266,8 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
 				}
 			}
 		});
+        
+        softControlView = findViewById(R.id.softControlView);
     }
 
     @Override
