@@ -14,6 +14,7 @@ import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.Toast;
@@ -45,7 +46,7 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
 	private VisualServoing vs;
     
     private boolean showVisualServoing = false;
-    private final static int MAX_POWER = 100;
+    public final static int MAX_POWER = 100;
     
     private int operator = 1;
     private int leftPower = 0;
@@ -57,7 +58,9 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
     private SeekBar seekBar = null;
 
 	private Spinner controlSpinner = null;
+	private Spinner resolutionSpinner = null;
     private ToggleButton toggleButton = null;
+    private ToggleButton lightButton = null;
     
     private ControlSystem controls = null;
     private MediaPlayer mediaControllerOffline = null;
@@ -215,6 +218,47 @@ public class ControllerActivity extends Activity implements LoaderCallbackInterf
 			public void onNothingSelected(AdapterView<?> arg0)
 			{
 				
+			}
+		});
+        
+        resolutionSpinner = (Spinner) findViewById(R.id.resolutionSpinner);
+        
+        // TODO: Populate the list of resolutions.
+        String [] resolutions = new String [] {"1920 x 1080", ""};
+        
+        ArrayAdapter<String> resolutionAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, resolutions);
+        resolutionAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        resolutionSpinner.setAdapter(resolutionAdapter);
+        resolutionSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener()
+		{
+
+			@Override
+			public void onItemSelected(AdapterView<?> arg0, View arg1,
+					int arg2, long arg3)
+			{
+				String item = (String) arg0.getItemAtPosition(arg2);
+				// TODO: Do something with the resolution string EG "1920 x 1080"
+			}
+
+			@Override
+			public void onNothingSelected(AdapterView<?> arg0)
+			{ }
+		});
+        
+        lightButton = (ToggleButton) findViewById(R.id.lightButton);
+        lightButton.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener()
+		{
+			@Override
+			public void onCheckedChanged(CompoundButton buttonView, boolean isChecked)
+			{
+				if (isChecked)
+				{
+					// TODO: The light button was toggled ON.
+				}
+				else
+				{
+					// TODO: The light button was toggled OFF.
+				}
 			}
 		});
     }
